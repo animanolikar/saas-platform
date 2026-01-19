@@ -1,0 +1,89 @@
+<div class="container p-5">
+    <div class="mb-5">
+        <h2 class="fw-bold text-body-emphasis">Welcome back! 👋</h2>
+        <p class="text-body-secondary">Here are the exams available for you.</p>
+    </div>
+
+    <!-- Spinner -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Available Exams Section -->
+    <h5 class="fw-bold text-body-secondary mb-4">Available Exams</h5>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        <div class="col" *ngFor="let ex of exams">
+            <div class="card h-100 border-0 shadow-sm hover-up transition-all rounded-4">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary-subtle text-primary">Exam</span>
+                        <small class="text-body-secondary">{{ ex.durationSeconds / 60 }} mins</small>
+                    </div>
+                    <h5 class="fw-bold mb-2">{{ ex.title }}</h5>
+                    <p class="text-body-secondary small flex-grow-1">{{ ex.description || 'No description provided.' }}
+                    </p>
+
+                    <hr class="my-3 opacity-10">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="small fw-medium text-body-secondary">
+                            <i class="bi bi-question-circle me-1"></i> {{ ex._count?.questions || 0 }} Qs
+                        </div>
+                        <div *ngIf="ex.attempts?.length > 0; else startBtn">
+                            <ng-container
+                                *ngIf="ex.attempts[0].status === 'SUBMITTED' || ex.attempts[0].status === 'EVALUATED'">
+                                <button class="btn btn-success text-white rounded-pill px-4"
+                                    [routerLink]="['/student/exam', ex.attempts[0].id, 'result']">
+                                    View Result
+                                </button>
+                            </ng-container>
+                            <ng-container *ngIf="ex.attempts[0].status === 'IN_PROGRESS'">
+                                <button class="btn btn-warning text-dark rounded-pill px-4"
+                                    [routerLink]="['/student/exam', ex.id, 'start']">
+                                    Resume
+                                </button>
+                            </ng-container>
+                        </div>
+                        <ng-template #startBtn>
+                            <ng-container *ngIf="isExamLocked(ex); else readyToStart">
+                                <button class="btn btn-secondary rounded-pill px-4 cursor-not-allowed" disabled>
+                                    <i class="bi bi-clock me-1"></i> Locked
+                                </button>
+                                <div class="mt-2 text-primary fw-bold small">
+                                    {{ getCountdown(ex) }}
+                                </div>
+                            </ng-container>
+                            <ng-template #readyToStart>
+                                <button class="btn btn-primary rounded-pill px-4"
+                                    [routerLink]="['/student/exam', ex.id, 'start']">
+                                    Start
+                                </button>
+                            </ng-template>
+                        </ng-template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12" *ngIf="exams.length === 0 && !loading">
+            <div class="alert alert-secondary border-0 shadow-sm text-center py-5">
+                <i class="bi bi-journal-x fs-1 text-body-secondary mb-3 d-block"></i>
+                <p class="text-body-secondary mb-0">No exams available available at the moment.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .hover-up:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>

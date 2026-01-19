@@ -1,0 +1,171 @@
+<div class="vh-100 d-flex flex-column bg-light" *ngIf="!loading && exam">
+    <!-- Header -->
+    <div class="bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center shadow-sm z-3">
+        <h5 class="mb-0 fw-bold text-primary">{{ exam.title }}</h5>
+        <div class="d-flex align-items-center gap-3">
+            <div class="badge rounded-pill border" [class.bg-danger-subtle]="warningCount >= 2"
+                [class.text-danger]="warningCount >= 2" [class.bg-warning-subtle]="warningCount === 1"
+                [class.text-warning]="warningCount === 1" [class.bg-success-subtle]="warningCount === 0"
+                [class.text-success]="warningCount === 0">
+                <i class="bi bi-exclamation-triangle me-1"></i> Warnings: {{ warningCount }}/{{ maxWarnings }}
+            </div>
+
+            <div class="fs-5 fw-bold font-monospace" [class.text-danger]="timeRemaining < 300">
+                <i class="bi bi-stopwatch me-2"></i>{{ formatTime }}
+            </div>
+            <button class="btn btn-success px-4" (click)="submitExam()">Submit Exam</button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-grow-1 container py-4">
+        <div class="row h-100">
+            <!-- Question Area -->
+            <div class="col-md-9 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between mb-3 text-muted">
+                            <span class="fw-bold">Question {{ currentQuestionIndex + 1 }} of {{ exam.questions.length
+                                }}</span>
+                            <span>+{{ exam.questions[currentQuestionIndex].marks }} marks</span>
+                        </div>
+
+                        <h4 class="mb-4 fw-medium">{{ exam.questions[currentQuestionIndex].question.content.text }}</h4>
+
+                        <!-- Question Image -->
+                        <div *ngIf="exam.questions[currentQuestionIndex].question.content.imageUrl"
+                            class="mb-4 text-center">
+                            <img [src]="exam.questions[currentQuestionIndex].question.content.imageUrl"
+                                alt="Question Image" class="img-fluid rounded border shadow-sm"
+                                style="max-height: 400px;">
+                        </div>
+
+                        <!-- Options -->
+                        <div class="d-flex flex-column gap-3 flex-grow-1 overflow-auto">
+                            <div *ngFor="let opt of exam.questions[currentQuestionIndex].question.options"
+                                class="p-3 border rounded-3 cursor-pointer transition-all d-flex align-items-center"
+                                [class.border-primary]="isOptionSelected(exam.questions[currentQuestionIndex].question.id, opt.id)"
+                                [class.bg-primary-subtle]="isOptionSelected(exam.questions[currentQuestionIndex].question.id, opt.id)"
+                                (click)="selectOption(exam.questions[currentQuestionIndex].question.id, opt.id)">
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" [name]="'q'+currentQuestionIndex"
+                                        [checked]="isOptionSelected(exam.questions[currentQuestionIndex].question.id, opt.id)"
+                                        (change)="selectOption(exam.questions[currentQuestionIndex].question.id, opt.id)">
+                                </div>
+                                <span class="ms-2">{{ opt.text }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <button class="btn btn-outline-secondary px-4" [disabled]="currentQuestionIndex === 0"
+                                (click)="prevQuestion()">
+                                <i class="bi bi-arrow-left me-2"></i> Previous
+                            </button>
+
+                            <button class="btn px-4"
+                                [class.btn-warning]="isMarkedForReview(exam.questions[currentQuestionIndex].question.id)"
+                                [class.btn-outline-warning]="!isMarkedForReview(exam.questions[currentQuestionIndex].question.id)"
+                                (click)="toggleMarkForReview(exam.questions[currentQuestionIndex].question.id)">
+                                <i class="bi bi-flag-fill me-2"></i> {{
+                                isMarkedForReview(exam.questions[currentQuestionIndex].question.id) ? 'Unmark Review' :
+                                'Mark for Review' }}
+                            </button>
+
+                            <button class="btn btn-primary px-4"
+                                [disabled]="currentQuestionIndex === exam.questions.length - 1"
+                                (click)="nextQuestion()">
+                                Next <i class="bi bi-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Palette -->
+            <div class="col-md-3">
+                <!-- Webcam Feed -->
+                <div class="card border-0 shadow-sm mb-3 overflow-hidden bg-black" *ngIf="isProctoringEnabled">
+                    <div class="ratio ratio-4x3">
+                        <video [srcObject]="cameraStream" autoplay muted playsinline class="object-fit-cover"></video>
+                    </div>
+                    <div class="card-footer py-2 bg-dark text-white text-center small">
+                        <i class="bi bi-record-circle text-danger me-1 animate-pulse"></i> Monitoring Active
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Question Palette</h6>
+                        <div class="d-grid grid-cols-5 gap-2">
+                            <button *ngFor="let q of exam.questions; let i = index" class="btn btn-sm position-relative"
+                                [class.btn-primary]="i === currentQuestionIndex"
+                                [class.btn-warning]="i !== currentQuestionIndex && isMarkedForReview(q.question.id)"
+                                [class.text-dark]="i !== currentQuestionIndex && isMarkedForReview(q.question.id)"
+                                [class.btn-success]="i !== currentQuestionIndex && !isMarkedForReview(q.question.id) && answers[q.question.id]"
+                                [class.btn-outline-secondary]="i !== currentQuestionIndex && !isMarkedForReview(q.question.id) && !answers[q.question.id]"
+                                (click)="currentQuestionIndex = i">
+                                {{ i + 1 }}
+                            </button>
+                        </div>
+
+                        <div class="mt-4 small text-muted">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="badge bg-primary rounded-circle p-1" style="width: 10px; height: 10px;">
+                                </div> Current
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="badge bg-success rounded-circle p-1" style="width: 10px; height: 10px;">
+                                </div> Answered
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="badge bg-warning text-dark rounded-circle p-1"
+                                    style="width: 10px; height: 10px;"> </div> Marked for Review
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="badge border border-secondary text-secondary rounded-circle p-1"
+                                    style="width: 10px; height: 10px;"> </div> Not Answered
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="loading" class="vh-100 d-flex justify-content-center align-items-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading Exam...</span>
+    </div>
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .grid-cols-5 {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+</style>

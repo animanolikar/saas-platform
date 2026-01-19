@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: saas_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-saas_platform}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - saas_network
+
+  # Backend API Service
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: saas_api
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-saas_platform}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - saas_network
+
+  # Frontend Client Service
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    container_name: saas_client
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - saas_network
+
+volumes:
+  postgres_data:
+
+networks:
+  saas_network:
+    driver: bridge

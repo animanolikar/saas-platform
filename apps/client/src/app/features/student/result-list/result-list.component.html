@@ -1,0 +1,61 @@
+<div class="container p-5">
+    <div class="mb-5">
+        <h2 class="fw-bold text-body-emphasis">My Progress</h2>
+        <p class="text-body-secondary">History of all your exam attempts and performance.</p>
+    </div>
+
+    <!-- Spinner -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" *ngIf="!loading">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-body-secondary">
+                    <tr>
+                        <th class="ps-4 py-3 text-body-secondary small text-uppercase">Exam</th>
+                        <th class="py-3 text-body-secondary small text-uppercase">Date</th>
+                        <th class="py-3 text-body-secondary small text-uppercase">Status</th>
+                        <th class="py-3 text-body-secondary small text-uppercase">Score</th>
+                        <th class="pe-4 py-3 text-end text-body-secondary small text-uppercase">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let attempt of history">
+                        <td class="ps-4 fw-medium">{{ attempt.exam.title }}</td>
+                        <td class="text-muted small">{{ attempt.startedAt | date:'mediumDate' }}</td>
+                        <td>
+                            <span class="badge rounded-pill" [class.bg-success-subtle]="attempt.status === 'SUBMITTED'"
+                                [class.text-success]="attempt.status === 'SUBMITTED'"
+                                [class.bg-warning-subtle]="attempt.status === 'IN_PROGRESS'"
+                                [class.text-warning]="attempt.status === 'IN_PROGRESS'">
+                                {{ attempt.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <span *ngIf="attempt.result" [class.text-success]="attempt.result.passed"
+                                [class.text-danger]="!attempt.result.passed" class="fw-bold">
+                                {{ attempt.totalScore }} / {{ attempt.result.maxMarks }}
+                            </span>
+                            <span *ngIf="!attempt.result" class="text-muted">-</span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                [routerLink]="['/student/exam', attempt.id, 'result']">View Report</button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="history.length === 0">
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-clock-history fs-3 mb-2 d-block opacity-50"></i>
+                            No past attempts found.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

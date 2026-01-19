@@ -1,0 +1,299 @@
+<div class="container-fluid p-0 vh-100 d-flex flex-column">
+    <!-- Header -->
+    <div class="bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center shadow-sm z-3">
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-outline-secondary btn-sm" routerLink="/admin/exams">
+                <i class="bi bi-arrow-left"></i>
+            </button>
+            <div>
+                <h5 class="mb-0 fw-bold">{{ exam?.title || 'Loading...' }}</h5>
+                <small class="text-muted" *ngIf="exam">Draft • {{ exam.durationSeconds / 60 }} mins</small>
+            </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-light border btn-sm" (click)="openEditExamModal()" title="Exam Settings">
+                <i class="bi bi-gear-fill text-secondary"></i>
+            </button>
+            <div class="text-end me-3">
+                <div class="h5 mb-0 fw-bold text-primary">{{ exam?.questions?.length || 0 }}</div>
+                <small class="text-muted">Questions</small>
+            </div>
+            <button class="btn btn-success text-white" *ngIf="exam?.status === 'DRAFT'" (click)="publishExam()">
+                <i class="bi bi-rocket-takeoff me-2"></i> Publish
+            </button>
+            <button class="btn btn-outline-secondary" routerLink="/admin/exams">
+                <i class="bi bi-check-lg me-2"></i> Done
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content (2 Columns) -->
+    <div class="flex-grow-1 row g-0 overflow-hidden" style="min-height: 0;">
+
+        <!-- Left: Exam Preview & Sections -->
+        <div class="col-md-7 bg-light d-flex flex-column border-end overflow-hidden h-100">
+            <!-- Sections Toolbar -->
+            <div class="bg-white border-bottom p-2 d-flex gap-2 overflow-auto" *ngIf="exam">
+                <button class="btn btn-sm btn-outline-primary whitespace-nowrap" (click)="createSection()">
+                    <i class="bi bi-folder-plus me-1"></i> New Section
+                </button>
+                <div class="vr mx-1"></div>
+                <button class="btn btn-sm rounded-pill whitespace-nowrap"
+                    [class.btn-primary]="activeSectionId === 'GENERAL'"
+                    [class.btn-outline-secondary]="activeSectionId !== 'GENERAL'" (click)="setActiveSection('GENERAL')">
+                    General ({{ exam.questions?.length || 0 }})
+                </button>
+                <button class="btn btn-sm rounded-pill whitespace-nowrap position-relative"
+                    *ngFor="let sec of exam.sections" [class.btn-primary]="activeSectionId === sec.id"
+                    [class.btn-outline-secondary]="activeSectionId !== sec.id" (click)="setActiveSection(sec.id)">
+                    {{ sec.title }} ({{ sec.questions?.length || 0 }})
+                    <i class="bi bi-pencil-fill ms-2 opacity-50 hover-opacity-100 fs-xs"
+                        (click)="$event.stopPropagation(); editSection(sec)"></i>
+                    <i class="bi bi-x-circle ms-1 opacity-50 hover-opacity-100"
+                        (click)="$event.stopPropagation(); deleteSection(sec.id)"></i>
+                </button>
+            </div>
+
+            <div class="p-4 overflow-auto flex-grow-1">
+                <!-- Section Header Display -->
+                <div *ngIf="activeSectionId && activeSectionId !== 'GENERAL'" class="mb-3 border-bottom pb-2">
+                    <h6 class="text-primary fw-bold text-uppercase small ls-1">Current Section</h6>
+                    <h4>{{ getSectionName(activeSectionId) }}</h4>
+                </div>
+                <div *ngIf="activeSectionId === 'GENERAL'" class="mb-3 border-bottom pb-2">
+                    <h6 class="text-secondary fw-bold text-uppercase small ls-1">Current Section</h6>
+                    <h4>General (Unassigned)</h4>
+                </div>
+
+                <!-- Empty State -->
+                <div *ngIf="activeSectionId === 'GENERAL' && !exam?.questions?.length && !exam?.sections?.length"
+                    class="text-center py-5 text-muted">
+                    <i class="bi bi-file-earmark-text display-4 opacity-25"></i>
+                    <p class="mt-3">No questions added yet.<br>Create a section or add general questions.</p>
+                </div>
+
+                <!-- Questions List (Filtered by Active Section) -->
+                <div cdkDropList cdkDropListLockAxis="y" [cdkDropListData]="currentQuestionsList"
+                    (cdkDropListDropped)="drop($event)">
+                    <div *ngIf="!currentQuestionsList?.length" class="text-center py-4 text-muted fst-italic">
+                        No questions in this section.
+                    </div>
+                    <div *ngFor="let eq of currentQuestionsList; let i = index; trackBy: trackByQuestionId"
+                        class="card border-0 shadow-sm mb-3" cdkDrag>
+                        <!-- Drag Preview (What follows cursor) -->
+                        <div *cdkDragPreview class="card border shadow bg-white p-3">
+                            <span class="fw-bold">{{ eq.question.content?.text }}</span>
+                        </div>
+
+                        <div class="card-body d-flex gap-3 align-items-start">
+                            <!-- Drag Handle -->
+                            <div class="text-muted cursor-move" cdkDragHandle title="Drag to reorder">
+                                <i class="bi bi-grip-vertical fs-5"></i>
+                            </div>
+
+                            <div class="fw-bold text-muted pt-1">Q{{ i + 1 }}</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium mb-2">{{ eq.question.content?.text }}</div>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-light text-dark border">{{ eq.question.type }}</span>
+                                    <span class="badge bg-success-subtle text-success-emphasis">+{{ eq.marks }}</span>
+                                    <span class="badge bg-danger-subtle text-danger-emphasis"
+                                        *ngIf="eq.negativeMarks > 0">-{{
+                                        eq.negativeMarks }}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-link text-danger p-0 align-self-start" (click)="removeQuestion(eq)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Question Bank -->
+        <div class="col-md-5 bg-white d-flex flex-column overflow-hidden shadow-start h-100">
+            <!-- Search Bar & Tags -->
+            <div class="p-3 border-bottom bg-white z-2">
+                <div class="input-group mb-2">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control bg-light border-start-0" placeholder="Search questions..."
+                        [(ngModel)]="searchQuery" (input)="filterQuestions()">
+                </div>
+                <!-- Tags Filter -->
+                <div class="d-flex flex-wrap gap-1" *ngIf="tags.length > 0">
+                    <span class="badge cursor-pointer border fw-normal" [class.bg-primary]="selectedTag === null"
+                        [class.text-white]="selectedTag === null" [class.bg-light]="selectedTag !== null"
+                        [class.text-secondary]="selectedTag !== null" (click)="selectTag(null)">
+                        All
+                    </span>
+                    <span *ngFor="let tag of tags" class="badge cursor-pointer border fw-normal"
+                        [class.bg-primary]="selectedTag === tag" [class.text-white]="selectedTag === tag"
+                        [class.bg-light]="selectedTag !== tag" [class.text-secondary]="selectedTag !== tag"
+                        (click)="selectTag(tag)">
+                        {{ tag }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Questions List -->
+            <div class="overflow-auto flex-grow-1 p-3 custom-scrollbar">
+                <div *ngFor="let q of filteredQuestions" class="card border mb-2 hover-shadow transition-all">
+                    <div class="card-body p-3">
+                        <!-- Question Text -->
+                        <div class="mb-2 text-truncate-2">{{ q.content?.text }}</div>
+
+                        <!-- Tags & Actions -->
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="d-flex gap-1 overflow-hidden">
+                                <span class="badge bg-light text-secondary border fw-normal" *ngFor="let t of q.tags">{{
+                                    t.tag?.name }}</span>
+                            </div>
+
+                            <button class="btn btn-sm btn-outline-primary" *ngIf="!isQuestionAdded(q.id)"
+                                (click)="addQuestion(q)" [disabled]="adding">
+                                <i class="bi bi-plus-lg"></i> Add
+                            </button>
+                            <button class="btn btn-sm btn-light text-success fw-bold" disabled
+                                *ngIf="isQuestionAdded(q.id)">
+                                <i class="bi bi-check2"></i> Added
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Edit Exam Settings Modal -->
+<div class="modal fade" id="editExamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Exam Settings</h5>
+                <button type="button" class="btn-close" (click)="closeEditExamModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Title</label>
+                    <input type="text" class="form-control" [(ngModel)]="editExamData.title">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Duration (Seconds)</label>
+                        <input type="number" class="form-control" [(ngModel)]="editExamData.durationSeconds">
+                        <small class="text-muted">{{ editExamData.durationSeconds / 60 | number:'1.0-0' }}
+                            mins</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Pass Percentage</label>
+                        <input type="number" class="form-control" [(ngModel)]="editExamData.passPercentage">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Scheduled Start Time (Strict)</label>
+                    <input type="datetime-local" class="form-control" [(ngModel)]="editExamData.scheduledAt">
+                    <small class="text-muted" style="font-size: 0.8rem;">
+                        If set, students cannot start the exam before this time.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeEditExamModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" (click)="saveExamSettings()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editSectionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Section</h5>
+                <button type="button" class="btn-close" (click)="closeEditSectionModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Title</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSectionData.title">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Time Limit (Sec)</label>
+                    <input type="number" class="form-control form-control-sm"
+                        [(ngModel)]="editSectionData.durationSeconds" placeholder="0 for unlimited">
+                    <small class="text-muted" style="font-size: 10px;">Leave 0 for no limit</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Cutoff Marks</label>
+                    <input type="number" class="form-control form-control-sm" [(ngModel)]="editSectionData.cutoffMarks"
+                        placeholder="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="closeEditSectionModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" (click)="saveSection()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    .fs-xs {
+        font-size: 0.75rem;
+    }
+
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .shadow-start {
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #86b7fe;
+        cursor: pointer;
+    }
+
+    .transition-all {
+        transition: all 0.2s;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .cursor-move {
+        cursor: grab;
+    }
+
+    .cursor-move:active {
+        cursor: grabbing;
+    }
+
+    .cdk-drag-placeholder {
+        opacity: 0.3;
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+    }
+
+    .cdk-drag-animating {
+        transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    .cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) {
+        transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+</style>

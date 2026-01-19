@@ -1,0 +1,5 @@
+firstName,lastName,email,role
+John,Doe,john.doe.v2@example.com,ORG_ADMIN
+Jane,Smith,jane.smith.v2@example.com,STAFF
+Bob,Jones,bob.jones.v2@example.com,STUDENT
+Alice,Wonder,alice.wonder.v2@example.com,STUDENT

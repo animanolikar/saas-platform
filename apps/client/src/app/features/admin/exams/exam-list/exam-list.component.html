@@ -1,0 +1,260 @@
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Exams</h2>
+            <p class="text-muted">Manage your tests and assessments.</p>
+        </div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" (click)="openCreateModal()">
+            <i class="bi bi-plus-lg"></i>
+            <span>Create Exam</span>
+        </button>
+    </div>
+
+    <!-- Exams Table -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Title</th>
+                            <th>Status</th>
+                            <th>Questions</th>
+                            <th>Duration</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="loading">
+                            <td colspan="5" class="text-center py-5 text-muted">Loading exams...</td>
+                        </tr>
+                        <tr *ngIf="!loading && exams.length === 0">
+                            <td colspan="5" class="text-center py-5 text-muted">No exams found. Create one to get
+                                started!</td>
+                        </tr>
+                        <tr *ngFor="let exam of exams">
+                            <td class="ps-4">
+                                <div class="fw-medium">{{ exam.title }}</div>
+                                <div class="small text-muted">{{ exam.description }}</div>
+                            </td>
+                            <td>
+                                <span class="badge" [class.bg-warning-subtle]="exam.status === 'DRAFT'"
+                                    [class.text-warning-emphasis]="exam.status === 'DRAFT'"
+                                    [class.bg-success-subtle]="exam.status === 'PUBLISHED'"
+                                    [class.text-success-emphasis]="exam.status === 'PUBLISHED'">
+                                    {{ exam.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ exam._count?.questions || 0 }}
+                            </td>
+                            <td>
+                                {{ (exam.durationSeconds / 60) | number:'1.0-0' }} mins
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-primary me-2" (click)="editExam(exam)">
+                                    <i class="bi bi-pencil me-1"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-dark me-2" (click)="goToBuilder(exam.id)">
+                                    <i class="bi bi-bricks me-1"></i> Builder
+                                </button>
+                                <button class="btn btn-sm btn-outline-success me-2" (click)="openAssignModal(exam)">
+                                    <i class="bi bi-person-plus-fill me-1"></i> Assign
+                                </button>
+                                <a [routerLink]="['/admin/exams', exam.id, 'results']"
+                                    class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-bar-chart-fill me-1"></i> Results
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+                *ngIf="!loading && allExams.length > 0">
+                <small class="text-muted">Showing {{ pager.currentPage === 1 ? 1 : (pager.currentPage - 1) *
+                    pager.pageSize + 1 }}
+                    to {{ (pager.currentPage - 1) * pager.pageSize + exams.length }} of {{ pager.totalItems }}
+                    entries</small>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [class.disabled]="pager.currentPage === 1">
+                            <a class="page-link" href="javascript:void(0)"
+                                (click)="setPage(pager.currentPage - 1)">Previous</a>
+                        </li>
+                        <li class="page-item" *ngFor="let page of pages" [class.active]="pager.currentPage === page">
+                            <a class="page-link" href="javascript:void(0)" (click)="setPage(page)">{{ page }}</a>
+                        </li>
+                        <li class="page-item" [class.disabled]="pager.currentPage === pager.totalPages">
+                            <a class="page-link" href="javascript:void(0)"
+                                (click)="setPage(pager.currentPage + 1)">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Exam Modal -->
+<div class="modal fade" id="createExamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">{{ isEditing ? 'Edit Exam' : 'Create New Exam' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- ... -->
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" (click)="submitExam()">{{ isEditing ? 'Update Exam' :
+                    'Create Exam' }}</button>
+            </div>
+            <div class="modal-body pt-4">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Title</label>
+                        <input type="text" class="form-control" [(ngModel)]="newExam.title" name="title"
+                            placeholder="e.g. Final Mathematics Assessment">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" [(ngModel)]="newExam.description" name="desc"
+                            rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Duration (Seconds)</label>
+                            <input type="number" class="form-control" [(ngModel)]="newExam.durationSeconds"
+                                name="duration">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Pass %</label>
+                            <input type="number" class="form-control" [(ngModel)]="newExam.passPercentage" name="pass">
+                        </div>
+                    </div>
+                    <div class="row bg-light p-2 rounded-3 mx-0 mb-3">
+                        <h6 class="fw-bold text-muted mb-2">Default Marking Scheme</h6>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small">Marks per Question</label>
+                            <input type="number" class="form-control form-control-sm"
+                                [(ngModel)]="newExam.settings.defaultPositiveMarks" name="posMarks">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small">Negative Marks</label>
+                            <input type="number" step="0.25" class="form-control form-control-sm"
+                                [(ngModel)]="newExam.settings.defaultNegativeMarks" name="negMarks"
+                                placeholder="e.g. 0.25">
+                            <div class="form-text x-small">Enter positive value (e.g. 0.25 will deduct 0.25)</div>
+                        </div>
+                        <div class="col-12 mt-2 pt-2 border-top">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="proctoringSwitch"
+                                    [(ngModel)]="newExam.settings.isProctoringEnabled" name="proctoring">
+                                <label class="form-check-label fw-medium" for="proctoringSwitch">
+                                    <i class="bi bi-camera-video me-1"></i> Enable Webcam Proctoring
+                                </label>
+                            </div>
+                            <div class="form-text x-small ms-4">If enabled, students must grant camera access to take
+                                the exam.</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" (click)="submitExam()">{{ isEditing ? 'Update Exam' :
+                    'Create Exam' }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Exam Modal -->
+<div class="modal fade" id="assignExamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Assign Exam: {{ selectedExamForAssign?.title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-4">
+                <ul class="nav nav-tabs mb-3" id="assignTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-pane"
+                            type="button" role="tab">Assign to Teams</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-pane"
+                            type="button" role="tab">Assign to Students</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="assignTabsContent" style="min-height: 300px;">
+                    <!-- Teams Pane -->
+                    <div class="tab-pane fade show active" id="teams-pane" role="tabpanel">
+                        <div class="list-group list-group-flush border rounded overflow-auto"
+                            style="max-height: 300px;">
+                            <label class="list-group-item d-flex align-items-center gap-3"
+                                *ngFor="let team of availableTeams">
+                                <input class="form-check-input flex-shrink-0" type="checkbox"
+                                    [checked]="selectedTeamIds.has(team.id)" (change)="toggleTeamSelection(team.id)">
+                                <div>
+                                    <div class="fw-bold">{{ team.name }}</div>
+                                    <small class="text-muted">{{ team.description }}</small>
+                                </div>
+                            </label>
+                            <div *ngIf="availableTeams.length === 0" class="p-3 text-center text-muted">
+                                No teams found. <a routerLink="/admin/teams">Create a team</a> first.
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Users Pane -->
+                    <div class="tab-pane fade" id="users-pane" role="tabpanel">
+                        <!-- Search and Select All -->
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search students..."
+                                [(ngModel)]="userSearchTerm">
+                        </div>
+                        <div class="form-check mb-2 ps-4" *ngIf="filteredUsers.length > 0">
+                            <input class="form-check-input" type="checkbox" id="selectAllUsers"
+                                [checked]="isAllVisibleUsersSelected()" (change)="toggleSelectAllUsers($event)">
+                            <label class="form-check-label user-select-none" for="selectAllUsers">
+                                Select All ({{ filteredUsers.length }})
+                            </label>
+                        </div>
+
+                        <!-- User List -->
+                        <div class="list-group list-group-flush border rounded overflow-auto"
+                            style="max-height: 300px;">
+                            <label class="list-group-item d-flex align-items-center gap-3"
+                                *ngFor="let user of filteredUsers">
+                                <input class="form-check-input flex-shrink-0" type="checkbox"
+                                    [checked]="selectedUserIds.has(user.id)" (change)="toggleUserSelection(user.id)">
+                                <div>
+                                    <div class="fw-bold">{{ user.firstName }} {{ user.lastName }}</div>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </label>
+                            <div *ngIf="filteredUsers.length === 0" class="p-3 text-center text-muted">
+                                No students found matching "{{ userSearchTerm }}".
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-end text-muted small">
+                    Selected: {{ selectedTeamIds.size }} Teams, {{ selectedUserIds.size }} Students
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success px-4" (click)="assignExam()" [disabled]="assigning">
+                    <span *ngIf="assigning" class="spinner-border spinner-border-sm me-2" role="status"
+                        aria-hidden="true"></span>
+                    {{ assigning ? 'Assigning...' : 'Confirm Assignment' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

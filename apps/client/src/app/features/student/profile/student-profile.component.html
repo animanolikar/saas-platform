@@ -1,0 +1,62 @@
+<div class="container p-5">
+    <div class="mb-5">
+        <h2 class="fw-bold text-body-emphasis">My Profile 👤</h2>
+        <p class="text-body-secondary">Manage your personal information.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center me-3 fw-bold fs-3"
+                            style="width: 64px; height: 64px;">
+                            {{ (user?.firstName || 'S')[0] }}
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold">{{ user?.firstName }} {{ user?.lastName }}</h5>
+                            <div class="text-body-secondary">{{ user?.role }}</div>
+                        </div>
+                    </div>
+
+                    <form (ngSubmit)="updateProfile()">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-body-secondary small fw-bold">First Name</label>
+                                <input type="text" class="form-control" [(ngModel)]="formData.firstName"
+                                    name="firstName" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-body-secondary small fw-bold">Last Name</label>
+                                <input type="text" class="form-control" [(ngModel)]="formData.lastName" name="lastName"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-body-secondary small fw-bold">Email Address</label>
+                            <input type="email" class="form-control" [value]="formData.email" disabled readonly>
+                            <div class="form-text">Email cannot be changed. Contact admin for assistance.</div>
+                        </div>
+
+                        <div *ngIf="successMessage" class="alert alert-success border-0 shadow-sm mb-3">
+                            <i class="bi bi-check-circle-fill me-2"></i> {{ successMessage }}
+                        </div>
+
+                        <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm mb-3">
+                            <i class="bi bi-exclamation-circle-fill me-2"></i> {{ errorMessage }}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" [disabled]="loading">
+                                <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"
+                                    aria-hidden="true"></span>
+                                {{ loading ? 'Saving...' : 'Save Changes' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

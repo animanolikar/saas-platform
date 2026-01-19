@@ -1,0 +1,166 @@
+<div class="d-flex flex-column gap-4 p-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center no-print">
+        <div>
+            <h2 class="fw-bold mb-1">Analytics & Reporting</h2>
+            <p class="text-muted mb-0">Track your progress and get AI-driven insights.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary no-print" [class.active]="activeTab === 'overview'"
+                (click)="activeTab = 'overview'">
+                <i class="bi bi-bar-chart-line me-2"></i>Overview
+            </button>
+            <button class="btn btn-primary no-print" [class.active]="activeTab === 'detailed'"
+                (click)="generateReport()">
+                <i class="bi bi-stars me-2"></i>AI Analysis
+            </button>
+            <button *ngIf="activeTab === 'detailed' && !reportLoading && reportContent"
+                class="btn btn-outline-primary no-print" (click)="generateReport(true)">
+                <i class="bi bi-arrow-clockwise me-2"></i> Regenerate
+            </button>
+            <button *ngIf="activeTab === 'detailed' && !reportLoading && reportContent"
+                class="btn btn-outline-dark no-print" (click)="printReport()">
+                <i class="bi bi-printer me-2"></i> Print PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'" class="d-flex flex-column gap-4">
+        <!-- Summary Cards -->
+        <div class="row g-4" *ngIf="summaryData">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <small class="text-muted fw-bold text-uppercase">Avg Score</small>
+                        <div class="h3 fw-bold mb-0 mt-2 text-primary">{{ summaryData.avgScore }}%</div>
+                        <small [class.text-success]="summaryData.change >= 0"
+                            [class.text-danger]="summaryData.change < 0">
+                            <i class="bi" [class.bi-arrow-up]="summaryData.change >= 0"
+                                [class.bi-arrow-down]="summaryData.change < 0"></i>
+                            {{ summaryData.change }}% vs avg
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <small class="text-muted fw-bold text-uppercase">Exams Taken</small>
+                        <div class="h3 fw-bold mb-0 mt-2">{{ summaryData.totalExams }}</div>
+                        <small class="text-muted">Total history</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <small class="text-muted fw-bold text-uppercase">Consistency</small>
+                        <div class="h3 fw-bold mb-0 mt-2" [class.text-success]="summaryData.consistency === 'High'"
+                            [class.text-primary]="summaryData.consistency === 'Medium'"
+                            [class.text-warning]="summaryData.consistency === 'Low'"
+                            [class.text-muted]="summaryData.consistency === 'N/A'">
+                            {{ summaryData.consistency }}
+                        </div>
+                        <small class="text-muted">Performance stability</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <small class="text-muted fw-bold text-uppercase">Strongest</small>
+                        <div class="h3 fw-bold mb-0 mt-2 text-success">{{ summaryData.strongestSubject }}</div>
+                        <small class="text-muted">Your best subject</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4">
+            <!-- Performance Trend -->
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 py-3">
+                        <h6 class="mb-0 fw-bold">Performance History</h6>
+                    </div>
+                    <div class="card-body" style="height: 300px;">
+                        <canvas baseChart [data]="performanceData" [options]="performanceOptions" [type]="'line'">
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Radar -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0 py-3">
+                        <h6 class="mb-0 fw-bold">Topic Analysis</h6>
+                    </div>
+                    <div class="card-body" style="height: 300px; display: flex; justify-content: center;">
+                        <canvas baseChart [data]="topicData" [options]="topicOptions" [type]="'radar'">
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed AI Report Tab -->
+    <div *ngIf="activeTab === 'detailed'" class="card border-0 shadow-sm">
+        <div class="card-body p-5">
+            <div *ngIf="reportLoading" class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <h5 class="fw-bold animate-pulse">Generating your "Zero to Hero" Analysis...</h5>
+                <p class="text-muted">Our AI is analyzing your performance trends, consistency, and topic data.</p>
+            </div>
+
+            <div id="printable-report" *ngIf="!reportLoading && reportContent">
+                <!-- Repeating Header -->
+                <div class="print-header d-none d-print-flex px-5 align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <svg width="100" height="26" viewBox="0 0 220 56" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 40.5V31.2L3 18.8H9.4L16.9 27.8L24.5 18.8H30.8L19.9 31.2 V40.5H14Z"
+                                fill="#E10600" />
+                            <path
+                                d="M34 32.5V18.8H39.3V32.1 C39.3 35.6 41.1 37.3 44.6 37.3 C48.1 37.3 49.9 35.6 49.9 32.1 V18.8H55.2V32.5 C55.2 38.6 51.1 41.3 44.6 41.3 C38.1 41.3 34 38.6 34 32.5Z"
+                                fill="#FF2A1A" />
+                            <path
+                                d="M60 40.5V18.8H65.3V29.5L74.7 18.8H80.8L70.6 29.8 L81.5 40.5H75.3L65.3 30.6V40.5H60Z"
+                                fill="#E10600" />
+                            <path d="M90 40.5V23.1H82.6V18.8H102.7V23.1H95.3V40.5H90Z" fill="#9B0C08" />
+                            <path d="M107 40.5V18.8H112.3V40.5H107Z" fill="#E10600" />
+                            <circle cx="140" cy="10" r="4" fill="#9B0C08" />
+                            <circle cx="152" cy="16" r="4" fill="#E10600" />
+                            <circle cx="164" cy="10" r="4" fill="#9B0C08" />
+                        </svg>
+                        <div class="vr mx-2" style="height: 20px; border-left: 2px solid #ccc; opacity: 1;"></div>
+                        <span class="small fw-semibold text-secondary"
+                            style="font-size: 14px; letter-spacing: 0.5px;">Student Performance Report</span>
+                    </div>
+                    <div class="small text-muted fw-medium">{{ today | date:'mediumDate' }}</div>
+                </div>
+
+                <div class="d-none d-print-block mb-4">
+                    <h1>Student Performance Report</h1>
+                    <p class="text-muted">Generated on {{ today | date:'mediumDate' }}</p>
+                    <hr>
+                </div>
+
+                <div class="markdown-content paper-document" [innerHTML]="reportContent"></div>
+
+                <!-- Repeating Footer -->
+                <div class="print-footer d-none d-print-flex">
+                    <span>Generated by Yukti AI Platform • Confidential Report</span>
+                </div>
+
+                <div class="d-none d-print-block mt-5 text-center text-muted small">
+                    <hr>
+                    <p>Yukti SaaS Platform - AI Powered Analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

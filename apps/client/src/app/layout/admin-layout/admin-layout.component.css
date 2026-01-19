@@ -1,0 +1,40 @@
+.sidebar-glass {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.nav-link {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff !important;
+    transform: translateX(5px);
+}
+
+.active-link {
+    background: var(--primary-gradient) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}

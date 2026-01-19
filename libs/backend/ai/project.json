@@ -1,0 +1,20 @@
+{
+  "name": "ai",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/backend/ai/src",
+  "projectType": "library",
+  "tags": ["scope:backend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/backend/ai",
+        "tsConfig": "libs/backend/ai/tsconfig.lib.json",
+        "packageJson": "libs/backend/ai/package.json",
+        "main": "libs/backend/ai/src/index.ts",
+        "assets": ["libs/backend/ai/*.md"]
+      }
+    }
+  }
+}

@@ -1,0 +1,214 @@
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Question Bank</h2>
+            <p class="text-muted">Repository of all test questions.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <input type="file" #fileInput style="display: none" accept=".csv" (change)="onFileSelected($event)">
+            <button class="btn btn-outline-primary d-flex align-items-center gap-2" (click)="fileInput.click()">
+                <i class="bi bi-upload"></i>
+                <span>Import CSV</span>
+            </button>
+            <a href="assets/sample-questions.csv" class="btn btn-light d-flex align-items-center gap-2" download
+                title="Download Template">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+            </a>
+            <button class="btn btn-primary d-flex align-items-center gap-2" (click)="openCreateModal()">
+                <i class="bi bi-plus-lg"></i>
+                <span>Create Question</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ success }}
+        <button type="button" class="btn-close" (click)="success = ''"></button>
+    </div>
+
+    <!-- Questions Table -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Question</th>
+                            <th>Type</th>
+                            <th>Difficulty</th>
+                            <th>Tags</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="loading">
+                            <td colspan="5" class="text-center py-5 text-muted">Loading questions...</td>
+                        </tr>
+                        <tr *ngIf="!loading && questions.length === 0">
+                            <td colspan="5" class="text-center py-5 text-muted">No questions found. Create one to get
+                                started!</td>
+                        </tr>
+                        <tr *ngFor="let q of questions">
+                            <td class="ps-4" style="max-width: 400px;">
+                                <div class="text-truncate fw-medium">
+                                    <i *ngIf="q.content.imageUrl" class="bi bi-image text-primary me-1"
+                                        title="Has Image"></i>
+                                    {{ q.content.text }}
+                                </div>
+                                <div class="small text-muted">{{ q.options?.length || 0 }} Options</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ q.type }}</span>
+                            </td>
+                            <td>
+                                <span class="badge" [class.bg-success-subtle]="q.difficulty === 'EASY'"
+                                    [class.text-success-emphasis]="q.difficulty === 'EASY'"
+                                    [class.bg-warning-subtle]="q.difficulty === 'MEDIUM'"
+                                    [class.text-warning-emphasis]="q.difficulty === 'MEDIUM'"
+                                    [class.bg-danger-subtle]="q.difficulty === 'HARD'"
+                                    [class.text-danger-emphasis]="q.difficulty === 'HARD'">
+                                    {{ q.difficulty }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <span *ngFor="let t of q.tags"
+                                        class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary">
+                                        {{ t.tag.name }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-light text-muted" (click)="openEditModal(q)"><i
+                                        class="bi bi-pencil"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+                *ngIf="!loading && allQuestions.length > 0">
+                <small class="text-muted">Showing {{ pager.currentPage === 1 ? 1 : (pager.currentPage - 1) *
+                    pager.pageSize + 1 }}
+                    to {{ (pager.currentPage - 1) * pager.pageSize + questions.length }} of {{ pager.totalItems }}
+                    entries</small>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [class.disabled]="pager.currentPage === 1">
+                            <a class="page-link" href="javascript:void(0)"
+                                (click)="setPage(pager.currentPage - 1)">Previous</a>
+                        </li>
+                        <li class="page-item" *ngFor="let page of pages" [class.active]="pager.currentPage === page">
+                            <a class="page-link" href="javascript:void(0)" (click)="setPage(page)">{{ page }}</a>
+                        </li>
+                        <li class="page-item" [class.disabled]="pager.currentPage === pager.totalPages">
+                            <a class="page-link" href="javascript:void(0)"
+                                (click)="setPage(pager.currentPage + 1)">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Question Modal -->
+<div class="modal fade" id="createQuestionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">{{ currentQuestionId ? 'Edit Question' : 'Create New Question' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-4">
+                <form>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Question Text</label>
+                            <quill-editor class="content-editor" [styles]="{height: '200px'}"
+                                [(ngModel)]="newQuestion.content.text" name="qText"
+                                placeholder="Enter your question here..."></quill-editor>
+                            <label class="form-label fw-bold mt-2">Image URL (Optional)</label>
+                            <input type="text" class="form-control" [(ngModel)]="newQuestion.content.imageUrl"
+                                name="qImage" placeholder="https://example.com/image.png">
+                            <div *ngIf="newQuestion.content.imageUrl" class="mt-2 text-center p-2 bg-light rounded">
+                                <img [src]="newQuestion.content.imageUrl" alt="Preview"
+                                    style="max-height: 150px; max-width: 100%;">
+                            </div>
+                            <label class="form-label fw-bold mt-2">Explanation (AI Context)</label>
+                            <textarea class="form-control" rows="3" [(ngModel)]="newQuestion.explanation"
+                                name="qExplanation"
+                                placeholder="Explain why the answer is correct (Markdown supported)..."></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Type</label>
+                                <select class="form-select" [(ngModel)]="newQuestion.type" name="qType">
+                                    <option value="MCQ_SINGLE">MCQ Single</option>
+                                    <option value="MCQ_MULTI">MCQ Multi</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Difficulty</label>
+                                <select class="form-select" [(ngModel)]="newQuestion.difficulty" name="qDiff">
+                                    <option value="EASY">Easy</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HARD">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Options</label>
+                            <div *ngFor="let opt of newQuestion.options; let i = index" class="input-group mb-2">
+                                <div class="input-group-text">
+                                    <ng-container *ngIf="newQuestion.type === 'MCQ_SINGLE'">
+                                        <input class="form-check-input mt-0" type="radio" [checked]="opt.isCorrect"
+                                            (change)="toggleCorrectOption(i)" name="correctOption"
+                                            aria-label="Correct option">
+                                    </ng-container>
+                                    <ng-container *ngIf="newQuestion.type === 'MCQ_MULTI'">
+                                        <input class="form-check-input mt-0" type="checkbox" [checked]="opt.isCorrect"
+                                            (change)="toggleCorrectOption(i)" aria-label="Correct option">
+                                    </ng-container>
+                                </div>
+                                <input type="text" class="form-control" [(ngModel)]="opt.text" [name]="'opt'+i"
+                                    placeholder="Option {{i+1}}">
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Tags</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" [(ngModel)]="tagInput" name="tagInput"
+                                    (keyup.enter)="addTag()" placeholder="Type tag and press Enter">
+                                <button class="btn btn-outline-secondary" type="button" (click)="addTag()">Add</button>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap mt-2">
+                                <span *ngFor="let tag of newQuestion.tags; let i = index"
+                                    class="badge rounded-pill bg-primary pe-1">
+                                    {{ tag }}
+                                    <button type="button" class="btn-close btn-close-white ms-1"
+                                        style="width: 0.5em; height: 0.5em;" (click)="removeTag(i)"></button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" (click)="saveQuestion()" [disabled]="saving">
+                    {{ saving ? 'Saving...' : (currentQuestionId ? 'Update Question' : 'Create Question') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

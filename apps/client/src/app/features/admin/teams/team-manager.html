@@ -1,0 +1,213 @@
+<div class="container-fluid p-4">
+    <div class="row g-4">
+        <!-- Create Team Card -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">Create New Team</h4>
+                    <p class="text-muted small mb-4">Organize your users into teams for better management.</p>
+
+                    <form (submit)="createTeam()">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-secondary">Team Name</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0"
+                                [(ngModel)]="newTeamName" name="name" placeholder="e.g. Class Room" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-secondary">Description</label>
+                            <textarea class="form-control bg-light border-0" rows="3" [(ngModel)]="newTeamDesc"
+                                name="desc" placeholder="Optional description..."></textarea>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-secondary">Academic
+                                    Year</label>
+                                <input type="text" class="form-control bg-light border-0" [(ngModel)]="newTeamYear"
+                                    name="year" placeholder="e.g. 2025-26">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-uppercase text-secondary">Batch</label>
+                                <input type="text" class="form-control bg-light border-0" [(ngModel)]="newTeamBatch"
+                                    name="batch" placeholder="e.g. A">
+                            </div>
+                        </div>
+
+                        <div *ngIf="error" class="alert alert-danger py-2 small mb-3">{{ error }}</div>
+                        <div *ngIf="success" class="alert alert-success py-2 small mb-3">{{ success }}</div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold"
+                            [disabled]="creating || !newTeamName">
+                            {{ creating ? 'Creating...' : 'Create Team' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team List -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-white p-4 border-bottom-0">
+                    <h4 class="fw-bold mb-0">Your Teams(Class Rooms)</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div *ngIf="loading" class="text-center py-5 text-muted">Loading teams...</div>
+                        <div *ngIf="!loading && teams.length === 0" class="text-center py-5 text-muted">No teams created
+                            yet.</div>
+
+                        <div *ngFor="let team of teams" class="list-group-item p-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="fw-bold mb-1">{{ team.name }}</h5>
+                                    <p class="text-muted mb-2 small">{{ team.description || 'No description' }}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-people me-1"></i>
+                                            {{ team._count?.members || 0 }} Members</span>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-sm" type="button" (click)="manageTeam(team)"><i
+                                            class="bi bi-gear"></i>
+                                        Manage</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Pagination -->
+                <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+                    *ngIf="!loading && allTeams.length > 0">
+                    <small class="text-muted">Showing {{ pager.currentPage === 1 ? 1 : (pager.currentPage - 1) *
+                        pager.pageSize + 1 }}
+                        to {{ (pager.currentPage - 1) * pager.pageSize + teams.length }} of {{ pager.totalItems }}
+                        entries</small>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" [class.disabled]="pager.currentPage === 1">
+                                <a class="page-link" href="javascript:void(0)"
+                                    (click)="setPage(pager.currentPage - 1)">Previous</a>
+                            </li>
+                            <li class="page-item" *ngFor="let page of pages"
+                                [class.active]="pager.currentPage === page">
+                                <a class="page-link" href="javascript:void(0)" (click)="setPage(page)">{{ page }}</a>
+                            </li>
+                            <li class="page-item" [class.disabled]="pager.currentPage === pager.totalPages">
+                                <a class="page-link" href="javascript:void(0)"
+                                    (click)="setPage(pager.currentPage + 1)">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Modal Overlay -->
+    <div *ngIf="showManageModal" class="modal-backdrop fade show"></div>
+
+    <!-- Manage Modal -->
+    <div *ngIf="showManageModal" class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Manage {{ selectedTeam?.name }}</h5>
+                    <button type="button" class="btn-close" (click)="closeManageModal()"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Add Member Section -->
+                    <div class="bg-light p-3 rounded-3 mb-4">
+                        <label class="form-label small fw-bold text-uppercase text-secondary">Add New Member</label>
+
+                        <!-- Filters -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-sm-6">
+                                <select class="form-select form-select-sm border fw-bold" [(ngModel)]="filterYear"
+                                    (change)="applyFilters()">
+                                    <option value="">All Years</option>
+                                    <option *ngFor="let year of academicYears" [value]="year">{{ year }}</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <select class="form-select form-select-sm border fw-bold" [(ngModel)]="filterBatch"
+                                    (change)="applyFilters()">
+                                    <option value="">All Batches</option>
+                                    <option *ngFor="let batch of batches" [value]="batch">{{ batch }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Search Bar -->
+                        <div class="mb-2">
+                            <input type="text" class="form-control form-control-sm border-0 mb-1"
+                                placeholder="Search users by name or email..." [(ngModel)]="userSearchTerm"
+                                (input)="filterUsers()">
+                        </div>
+
+                        <!-- User List with Checkboxes -->
+                        <!-- User List with Checkboxes -->
+                        <div class="border rounded-3 overflow-hidden mb-3">
+                            <!-- Select All Header (Fixed) -->
+                            <div class="p-2 border-bottom bg-light d-flex align-items-center gap-2"
+                                *ngIf="filteredUsers.length > 0">
+                                <input type="checkbox" class="form-check-input mt-0" [checked]="isAllSelected()"
+                                    (change)="toggleSelectAll()">
+                                <small class="fw-bold text-secondary text-uppercase">Select All
+                                    ({{filteredUsers.length}})</small>
+                            </div>
+
+                            <!-- Scrollable List -->
+                            <div class="overflow-auto bg-white" style="max-height: 250px;">
+                                <div *ngIf="filteredUsers.length === 0" class="p-3 text-center text-muted small">
+                                    No users found matching "{{userSearchTerm}}"
+                                </div>
+                                <div *ngFor="let user of filteredUsers"
+                                    class="p-2 border-bottom d-flex align-items-center gap-2 hover-bg-light cursor-pointer"
+                                    (click)="toggleSelection(user.id)">
+                                    <input type="checkbox" class="form-check-input mt-0"
+                                        [checked]="selectedUserIds.has(user.id)"
+                                        (click)="$event.stopPropagation(); toggleSelection(user.id)">
+                                    <div class="small">
+                                        <div class="fw-bold">{{ user.firstName }} {{ user.lastName }}</div>
+                                        <div class="text-muted" style="font-size: 0.8rem;">{{ user.email }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button class="btn btn-primary px-4 fw-bold"
+                                [disabled]="selectedUserIds.size === 0 || addingMembers" (click)="addMembers()">
+                                {{ addingMembers ? 'Adding...' : 'Add Selected (' + selectedUserIds.size + ')' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Members List -->
+                    <h6 class="fw-bold mb-3">Current Members ({{ teamMembers.length }})</h6>
+                    <div class="list-group">
+                        <div *ngIf="teamMembers.length === 0"
+                            class="text-center py-4 text-muted border rounded bg-white">
+                            No members in this team yet.
+                        </div>
+                        <div *ngFor="let member of teamMembers"
+                            class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ member.user?.firstName }} {{ member.user?.lastName }}</h6>
+                                <small class="text-muted">{{ member.user?.email }}</small>
+                                <span class="badge bg-light text-dark ms-2 border">{{ member.role }}</span>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm" (click)="removeMember(member.user?.id)">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary" (click)="closeManageModal()">Close</button>
+                </div> -->
+            </div>
+        </div>
+    </div>
+</div>

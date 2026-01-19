@@ -1,0 +1,320 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique // For subdomains or URL paths
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  teams     Team[]
+  questions Question[]
+  tags      Tag[]
+  exams     Exam[]
+  examAttempts ExamAttempt[]
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  firstName      String?
+  lastName       String?
+  role           UserRole     @default(STUDENT)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  teams          TeamMember[]
+  examAttempts   ExamAttempt[]
+  assignedExams  ExamAssignment[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isTempPassword Boolean      @default(false)
+  
+  academicYear   String?      // e.g. "2025-26"
+  batch          String?      // e.g. "A", "B", "Alpha"
+
+
+  @@index([organizationId])
+}
+
+model Team {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        TeamMember[]
+  assignedExams  ExamAssignment[]
+  
+  academicYear   String?
+  batch          String?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  userId    String
+  teamId    String
+  role      TeamRole
+  user      User     @relation(fields: [userId], references: [id])
+  team      Team     @relation(fields: [teamId], references: [id])
+}
+
+// Exam & Content System
+
+enum QuestionType {
+  MCQ_SINGLE
+  MCQ_MULTI
+  CODING
+  SUBJECTIVE
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+}
+
+model Question {
+  id             String       @id @default(uuid())
+  organizationId String
+  type           QuestionType
+  difficulty     DifficultyLevel
+  content        Json         
+  explanation    String?      // Markdown explanation for the answer
+  status         QuestionStatus @default(DRAFT)
+  
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  options        QuestionOption[]
+  tags           QuestionTag[]
+  examQuestions  ExamQuestion[]
+  attemptAnswers AttemptAnswer[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model QuestionOption {
+  id          String   @id @default(uuid())
+  questionId  String
+  text        String
+  isCorrect   Boolean
+  order       Int
+  
+  question    Question @relation(fields: [questionId], references: [id])
+
+  @@index([questionId])
+}
+
+enum TagType {
+  CONCEPT
+  TOPIC
+  SKILL
+}
+
+model Tag {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  type           TagType
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  questions      QuestionTag[]
+
+  @@index([organizationId])
+}
+
+model QuestionTag {
+  questionId String
+  tagId      String
+  
+  question   Question @relation(fields: [questionId], references: [id])
+  tag        Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([questionId, tagId])
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Exam {
+  id              String   @id @default(uuid())
+  organizationId  String
+  title           String
+  description     String?
+  instructions    String?
+  durationSeconds Int      @default(3600) // 1 hour default
+  passPercentage  Float    @default(40.0)
+  scheduledAt     DateTime? // Strict start time
+  status          ExamStatus @default(DRAFT)
+  settings        Json?    // { shuffleQuestions: boolean, showResults: boolean }
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  sections        ExamSection[]
+  questions       ExamQuestion[]
+  attempts        ExamAttempt[]
+  assignments     ExamAssignment[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model ExamSection {
+  id          String   @id @default(uuid())
+  examId      String
+  title       String
+  description String?
+  order       Int      @default(0)
+  
+  durationSeconds Int?     // Section specific time limit
+  cutoffMarks     Float?   // Minimum marks required to pass/clear section
+
+  exam        Exam     @relation(fields: [examId], references: [id])
+  questions   ExamQuestion[]
+}
+
+model ExamQuestion {
+  id              String   @id @default(uuid())
+  examId          String
+  sectionId       String?
+  questionId      String
+  
+  marks           Float    @default(1.0)
+  negativeMarks   Float    @default(0.0)
+  order           Int      @default(0)
+
+  exam            Exam     @relation(fields: [examId], references: [id])
+  section         ExamSection? @relation(fields: [sectionId], references: [id])
+  question        Question @relation(fields: [questionId], references: [id])
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model ExamAttempt {
+  id              String   @id @default(uuid())
+  examId          String
+  userId          String
+  organizationId  String
+
+  startedAt       DateTime @default(now())
+  submittedAt     DateTime?
+  status          AttemptStatus @default(IN_PROGRESS)
+  
+  totalScore      Float?
+  result          Json?    // { passed: boolean, rank: int }
+  aiAnalysisStatus AnalysisStatus @default(PENDING)
+
+  exam            Exam     @relation(fields: [examId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  answers         AttemptAnswer[]
+  telemetry       AttemptTelemetry[]
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model ExamAssignment {
+  id              String   @id @default(uuid())
+  examId          String
+  // Assignment target (either Team or User)
+  teamId          String?
+  userId          String?
+  
+  assignedAt      DateTime @default(now())
+  assignedBy      String   // Admin/Staff ID
+
+  exam            Exam     @relation(fields: [examId], references: [id])
+  team            Team?    @relation(fields: [teamId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([examId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model AttemptAnswer {
+  id               String   @id @default(uuid())
+  attemptId        String
+  questionId       String
+  
+  // For MCQ
+  selectedOptionId String?  
+  // For Subjective/Code
+  inputText        String?  
+
+  isCorrect        Boolean?
+  marksAwarded     Float?
+  timeSpentMs      Int      @default(0)
+  
+  // AI & Analytics Fields
+  aiScore          Int?
+  aiFeedback       String?
+
+  attempt          ExamAttempt @relation(fields: [attemptId], references: [id])
+  question         Question    @relation(fields: [questionId], references: [id])
+  
+  @@index([attemptId])
+}
+
+model AttemptTelemetry {
+  id        String   @id @default(uuid())
+  attemptId String
+  events    Json     // Array of events [{ t: 100, e: 'focus_lost' }]
+
+  attempt   ExamAttempt @relation(fields: [attemptId], references: [id])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  STAFF
+  STUDENT
+}
+
+enum TeamRole {
+  LEADER
+  MEMBER
+  VIEWER
+}

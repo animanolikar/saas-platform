@@ -1,0 +1,10 @@
+/* user-list.css */
+.avatar-initial {
+    font-size: 14px;
+    letter-spacing: -1px;
+}
+
+.var-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}

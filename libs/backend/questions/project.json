@@ -1,0 +1,11 @@
+{
+  "name": "questions",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/backend/questions/src",
+  "projectType": "library",
+  "tags": [
+    "type:feature",
+    "scope:backend"
+  ],
+  "targets": {}
+}

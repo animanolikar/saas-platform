@@ -1,0 +1,25 @@
+.icon-square {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.card:hover .icon-square {
+    transform: scale(1.1);
+}
+
+.shadow-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.shadow-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.activity-feed .feed-item:last-child {
+    border-bottom: none !important;
+}
