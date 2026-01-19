@@ -11,7 +11,7 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 
 # Build the Client (Production)
-RUN npx nx build client:production
+RUN npx nx build client --configuration=production
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

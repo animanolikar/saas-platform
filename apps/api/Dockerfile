@@ -11,7 +11,7 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 
 # Build the API
-RUN npx nx build api
+RUN npx nx build api --configuration=production
 
 # Stage 2: Production
 FROM node:20-alpine
