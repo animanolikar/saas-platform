@@ -15,8 +15,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    # ports:
-    #   - "5432:5432" # Commented out to avoid conflict if host has Postgres
+    ports:
+      - "5432:5432" # Exposed for remote access (PgAdmin)
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
