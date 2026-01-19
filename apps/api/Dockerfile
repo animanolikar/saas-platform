@@ -7,6 +7,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
+# Copy schema and generate Prisma Client
+COPY prisma ./prisma
+RUN npx prisma generate
+
 # Copy source code
 COPY . .
 
