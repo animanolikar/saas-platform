@@ -39,9 +39,9 @@ if ! $DOCKER_COMPOSE exec -T api npx prisma migrate deploy; then
     exit 1
 fi
 
-# 5. Seed Database (Optional)
-# echo "🌱 Seeding Database..."
-# $DOCKER_COMPOSE exec -T api npx prisma db seed
+# 5. Seed Database
+echo "🌱 Seeding Database..."
+$DOCKER_COMPOSE exec -T api npx prisma db seed
 
 echo "=========================================="
 echo "✅ DEPLOYMENT COMPLETE!"
