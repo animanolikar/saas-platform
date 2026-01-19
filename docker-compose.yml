@@ -39,6 +39,13 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-saas_platform}?schema=public}
       JWT_SECRET: ${JWT_SECRET:-supersecretkey}
       PORT: 3000
+      # AI & Vector DB
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      QDRANT_URL: ${QDRANT_URL}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      # Email Service
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
     ports:
       - "3000:3000"
     networks:
