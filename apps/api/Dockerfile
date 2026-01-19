@@ -33,6 +33,7 @@ COPY --from=builder /app/dist/apps/api ./dist/apps/api
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/tsconfig.seed.json ./tsconfig.seed.json
 
 # Expose port
 EXPOSE 3000
