@@ -4,38 +4,39 @@
 
 echo "🚀 Starting Deployment Process..."
 
-# 1. Check for Docker
-if ! command -v docker &> /dev/null; then
-    echo "❌ Error: Docker is not installed."
+# Check for docker-compose (v1) or docker compose (v2+ plugin)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo "❌ Error: Neither 'docker-compose' nor 'docker compose' is installed."
+    echo "Please install Docker Compose plugin: sudo apt-get install docker-compose-plugin"
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Error: docker-compose is not installed."
-    exit 1
-fi
-
+echo "✅ Using: $DOCKER_COMPOSE"
 echo "✅ Docker environment verified."
 
-# 2. Stop existing services
+# 1. Stop existing services
 echo "🛑 Stopping existing services..."
-docker-compose down
+$DOCKER_COMPOSE down
 
-# 3. Build and Start Services
+# 2. Build and Start Services
 echo "🏗️  Building and Starting containers (this may take a while)..."
-docker-compose up -d --build
+$DOCKER_COMPOSE up -d --build
 
-# 4. Wait for Database to be ready
+# 3. Wait for Database to be ready
 echo "⏳ Waiting for services to initialize..."
 sleep 15
 
-# 5. Run Database Migrations
+# 4. Run Database Migrations
 echo "📦 Running Database Migrations..."
-docker-compose exec -T api npx prisma migrate deploy
+$DOCKER_COMPOSE exec -T api npx prisma migrate deploy
 
-# 6. Seed Database (Optional - uncomment if needed for new setups)
+# 5. Seed Database (Optional)
 # echo "🌱 Seeding Database..."
-# docker-compose exec -T api npx prisma db seed
+# $DOCKER_COMPOSE exec -T api npx prisma db seed
 
 echo "=========================================="
 echo "✅ DEPLOYMENT COMPLETE!"
