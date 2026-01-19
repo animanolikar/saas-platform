@@ -33,7 +33,11 @@ sleep 15
 
 # 4. Run Database Migrations
 echo "📦 Running Database Migrations..."
-$DOCKER_COMPOSE exec -T api npx prisma migrate deploy
+if ! $DOCKER_COMPOSE exec -T api npx prisma migrate deploy; then
+    echo "❌ Error: Migration failed. Fetching API logs..."
+    docker logs saas_api
+    exit 1
+fi
 
 # 5. Seed Database (Optional)
 # echo "🌱 Seeding Database..."
