@@ -196,6 +196,8 @@ export class StudentReportsComponent implements OnInit {
   // AI Report
   reportContent: SafeHtml = '';
   reportLoading = false;
+  reportHistory: any[] = [];
+  selectedReportId: string | null = null;
 
   constructor(
     private reportsService: ReportsService,
@@ -217,21 +219,39 @@ export class StudentReportsComponent implements OnInit {
 
   ngOnInit() {
     this.loadOverviewData();
-    if (!this.userId) {
-      this.loadCachedReport();
-    }
+    // Load history instead of local cache
+    this.loadHistory();
   }
 
-  loadCachedReport() {
-    const uid = this.getCurrentUserId();
-    if (!uid) return;
+  loadHistory() {
+    this.reportsService.getReportHistory(this.userId).subscribe(history => {
+      this.reportHistory = history;
+      // If no report selected and history exists, load the latest one
+      if (!this.selectedReportId && this.reportHistory.length > 0) {
+        this.viewReport(this.reportHistory[0]);
+      }
+      this.cdr.markForCheck();
+    });
+  }
 
-    const key = `yukti_ai_report_${uid}`;
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      this.activeTab = 'detailed';
-      this.setReportContent(cached);
-    }
+  viewReport(report: any) {
+    this.activeTab = 'detailed';
+    this.selectedReportId = report.id;
+    this.reportLoading = true;
+    this.cdr.markForCheck();
+
+    this.reportsService.getReportById(report.id, this.userId).subscribe({
+      next: (res) => {
+        this.setReportContent(res.content);
+        this.reportLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.reportLoading = false;
+        this.reportContent = 'Failed to load report.';
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   loadOverviewData() {
@@ -263,18 +283,36 @@ export class StudentReportsComponent implements OnInit {
   generateReport(force = false) {
     this.activeTab = 'detailed';
     const uid = this.getCurrentUserId();
-    const key = uid ? `yukti_ai_report_${uid}` : null;
 
-    if (!force && !this.userId && this.reportContent && key && localStorage.getItem(key)) return;
+    // If forcing generation, ignore current state
+    if (force) {
+      this.performGeneration(uid);
+      return;
+    }
 
+    // If we are already viewing a report, do nothing (just switch tab)
+    if (this.selectedReportId) return;
+
+    // If we have history, view the latest
+    if (this.reportHistory.length > 0) {
+      this.viewReport(this.reportHistory[0]);
+      return;
+    }
+
+    // Otherwise, generate new (first time)
+    this.performGeneration(uid);
+  }
+
+  private performGeneration(uid: string | null) {
     this.reportLoading = true;
     this.cdr.markForCheck();
 
     this.reportsService.getFullReport(this.userId).subscribe({
       next: (res) => {
-        if (!this.userId && key) localStorage.setItem(key, res.content);
         this.setReportContent(res.content);
         this.reportLoading = false;
+        // Refresh history to include the new one
+        this.loadHistory();
         this.cdr.markForCheck();
       },
       error: () => {

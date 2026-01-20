@@ -108,57 +108,74 @@
     </div>
 
     <!-- Detailed AI Report Tab -->
-    <div *ngIf="activeTab === 'detailed'" class="card border-0 shadow-sm">
-        <div class="card-body p-5">
-            <div *ngIf="reportLoading" class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
-                <h5 class="fw-bold animate-pulse">Generating your "Zero to Hero" Analysis...</h5>
-                <p class="text-muted">Our AI is analyzing your performance trends, consistency, and topic data.</p>
+    <div *ngIf="activeTab === 'detailed'" class="row g-4">
+        <!-- History Sidebar -->
+        <div class="col-md-3 no-print">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent fw-bold py-3">Report History</div>
+                <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                    <button *ngFor="let report of reportHistory"
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                        [class.active]="selectedReportId === report.id" (click)="viewReport(report)">
+                        <div>
+                            <div class="fw-semibold">{{ report.createdAt | date:'mediumDate' }}</div>
+                            <small class="text-muted">{{ report.createdAt | date:'shortTime' }}</small>
+                        </div>
+                        <i class="bi bi-chevron-right small"></i>
+                    </button>
+
+                    <button *ngIf="!reportLoading"
+                        class="list-group-item list-group-item-action text-primary fw-bold text-center py-3"
+                        (click)="generateReport(true)">
+                        <i class="bi bi-plus-circle me-2"></i> Generate New
+                    </button>
+                </div>
             </div>
+        </div>
 
-            <div id="printable-report" *ngIf="!reportLoading && reportContent">
-                <!-- Repeating Header -->
-                <div class="print-header d-none d-print-flex px-5 align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <svg width="100" height="26" viewBox="0 0 220 56" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path d="M14 40.5V31.2L3 18.8H9.4L16.9 27.8L24.5 18.8H30.8L19.9 31.2 V40.5H14Z"
-                                fill="#E10600" />
-                            <path
-                                d="M34 32.5V18.8H39.3V32.1 C39.3 35.6 41.1 37.3 44.6 37.3 C48.1 37.3 49.9 35.6 49.9 32.1 V18.8H55.2V32.5 C55.2 38.6 51.1 41.3 44.6 41.3 C38.1 41.3 34 38.6 34 32.5Z"
-                                fill="#FF2A1A" />
-                            <path
-                                d="M60 40.5V18.8H65.3V29.5L74.7 18.8H80.8L70.6 29.8 L81.5 40.5H75.3L65.3 30.6V40.5H60Z"
-                                fill="#E10600" />
-                            <path d="M90 40.5V23.1H82.6V18.8H102.7V23.1H95.3V40.5H90Z" fill="#9B0C08" />
-                            <path d="M107 40.5V18.8H112.3V40.5H107Z" fill="#E10600" />
-                            <circle cx="140" cy="10" r="4" fill="#9B0C08" />
-                            <circle cx="152" cy="16" r="4" fill="#E10600" />
-                            <circle cx="164" cy="10" r="4" fill="#9B0C08" />
-                        </svg>
-                        <div class="vr mx-2" style="height: 20px; border-left: 2px solid #ccc; opacity: 1;"></div>
-                        <span class="small fw-semibold text-secondary"
-                            style="font-size: 14px; letter-spacing: 0.5px;">Student Performance Report</span>
+        <!-- content -->
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <div *ngIf="reportLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <h5 class="fw-bold animate-pulse">Generating your "Zero to Hero" Analysis...</h5>
+                        <p class="text-muted">Our AI is analyzing your performance trends, consistency, and topic data.
+                        </p>
                     </div>
-                    <div class="small text-muted fw-medium">{{ today | date:'mediumDate' }}</div>
-                </div>
 
-                <div class="d-none d-print-block mb-4">
-                    <h1>Student Performance Report</h1>
-                    <p class="text-muted">Generated on {{ today | date:'mediumDate' }}</p>
-                    <hr>
-                </div>
+                    <div id="printable-report" *ngIf="!reportLoading && reportContent">
+                        <!-- Repeating Header -->
+                        <div class="print-header d-none d-print-flex px-5 align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fw-bold text-uppercase text-danger"
+                                    style="font-size: 24px; letter-spacing: 1px;">YUKTI</span>
+                                <div class="vr mx-2" style="height: 20px; border-left: 2px solid #ccc; opacity: 1;">
+                                </div>
+                                <span class="small fw-semibold text-secondary"
+                                    style="font-size: 14px; letter-spacing: 0.5px;">Student Performance Report</span>
+                            </div>
+                            <div class="small text-muted fw-medium">{{ today | date:'mediumDate' }}</div>
+                        </div>
 
-                <div class="markdown-content paper-document" [innerHTML]="reportContent"></div>
+                        <div class="d-none d-print-block mb-4">
+                            <h1>Student Performance Report</h1>
+                            <p class="text-muted">Generated on {{ today | date:'mediumDate' }}</p>
+                            <hr>
+                        </div>
 
-                <!-- Repeating Footer -->
-                <div class="print-footer d-none d-print-flex">
-                    <span>Generated by Yukti AI Platform • Confidential Report</span>
-                </div>
+                        <div class="markdown-content paper-document" [innerHTML]="reportContent"></div>
 
-                <div class="d-none d-print-block mt-5 text-center text-muted small">
-                    <hr>
-                    <p>Yukti SaaS Platform - AI Powered Analytics</p>
+                        <!-- Repeating Footer -->
+                        <div class="print-footer d-none d-print-flex">
+                            <span>Generated by Yukti AI Platform • Confidential Report</span>
+                        </div>
+
+                        <div class="d-none d-print-block mt-5 text-center text-muted small">
+                            <hr>
+                            <p>Yukti SaaS Platform - AI Powered Analytics</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

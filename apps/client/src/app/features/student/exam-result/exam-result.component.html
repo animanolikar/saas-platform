@@ -1,117 +1,139 @@
-<div class="container p-4" *ngIf="!loading && attempt">
-    <div class="mb-4">
-        <a routerLink="/student/dashboard" class="text-decoration-none text-secondary mb-2 d-inline-block">
-            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-        </a>
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h2 class="fw-bold mb-1">Result: {{ attempt.exam.title }}</h2>
-                <div class="text-muted">{{ attempt.submittedAt | date:'medium' }}</div>
-            </div>
-            <div class="text-end">
-                <div class="fs-2 fw-bold" [class.text-success]="attempt.result?.passed"
-                    [class.text-danger]="!attempt.result?.passed">
-                    {{ attempt.totalScore }} <span class="fs-5 text-muted">/ {{ attempt.result?.maxMarks }}</span>
-                </div>
-                <span class="badge" [class.bg-success-subtle]="attempt.result?.passed"
-                    [class.text-success-emphasis]="attempt.result?.passed"
-                    [class.bg-danger-subtle]="!attempt.result?.passed"
-                    [class.text-danger-emphasis]="!attempt.result?.passed">
-                    {{ attempt.result?.passed ? 'PASSED' : 'FAILED' }} ({{ attempt.result?.percentage | number:'1.0-1'
-                    }}%)
-                </span>
-            </div>
-        </div>
+<div class="container p-4">
+    <!-- Error View -->
+    <div *ngIf="error" class="alert alert-danger shadow-sm rounded-4 mb-4">
+        <h4 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Error</h4>
+        <p>{{ error }}</p>
+        <hr>
+        <button routerLink="/student/dashboard" class="btn btn-outline-danger">Back to Dashboard</button>
     </div>
 
-    <div class="row">
-        <!-- Question Review -->
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0 rounded-4 mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Answer Review</h5>
+    <!-- Not Found View -->
+    <div *ngIf="!loading && !attempt && !error" class="alert alert-warning shadow-sm rounded-4 mb-4 text-center py-5">
+        <i class="bi bi-search fs-1 mb-3 d-block text-warning"></i>
+        <h4 class="alert-heading fw-bold">Result Not Found</h4>
+        <p class="mb-4">We couldn't find the result you are looking for.</p>
+        <button routerLink="/student/dashboard" class="btn btn-warning text-white">Back to Dashboard</button>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!loading && attempt && !error">
+        <div class="mb-4">
+            <a routerLink="/student/dashboard" class="text-decoration-none text-secondary mb-2 d-inline-block">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-bold mb-1">Result: {{ attempt.exam.title }}</h2>
+                    <div class="text-muted">{{ attempt.submittedAt | date:'medium' }}</div>
                 </div>
-                <div class="card-body">
-                    <div *ngFor="let q of attempt.exam.questions; let i = index"
-                        class="mb-4 pb-4 border-bottom last:border-0">
-                        <div class="d-flex justify-content-between mb-2">
-                            <h6 class="fw-bold">Q{{ i+1 }}. {{ q.question.content.text }}</h6>
-                            <span class="badge bg-light text-dark border">{{ q.marks }} Marks</span>
-                        </div>
+                <div class="text-end">
+                    <div class="fs-2 fw-bold" [class.text-success]="attempt.result?.passed"
+                        [class.text-danger]="!attempt.result?.passed">
+                        {{ attempt.totalScore }} <span class="fs-5 text-muted">/ {{ attempt.result?.maxMarks }}</span>
+                    </div>
+                    <span class="badge" [class.bg-success-subtle]="attempt.result?.passed"
+                        [class.text-success-emphasis]="attempt.result?.passed"
+                        [class.bg-danger-subtle]="!attempt.result?.passed"
+                        [class.text-danger-emphasis]="!attempt.result?.passed">
+                        {{ attempt.result?.passed ? 'PASSED' : 'FAILED' }} ({{ attempt.result?.percentage |
+                        number:'1.0-1'
+                        }}%)
+                    </span>
+                </div>
+            </div>
+        </div>
 
-                        <div class="d-flex flex-column gap-2">
-                            <div *ngFor="let opt of q.question.options"
-                                class="p-2 border rounded d-flex align-items-center"
-                                [class.bg-success-subtle]="opt.isCorrect" [class.border-success]="opt.isCorrect"
-                                [class.bg-danger-subtle]="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)"
-                                [class.border-danger]="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)">
-
-                                <i class="bi bi-check-circle-fill text-success me-2" *ngIf="opt.isCorrect"></i>
-                                <i class="bi bi-x-circle-fill text-danger me-2"
-                                    *ngIf="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)"></i>
-                                <i class="bi bi-circle text-muted me-2"
-                                    *ngIf="!opt.isCorrect && !isOptionSelected(q.question.id, opt.id)"></i>
-
-                                {{ opt.text }}
+        <div class="row">
+            <!-- Question Review -->
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold">Answer Review</h5>
+                    </div>
+                    <div class="card-body">
+                        <div *ngFor="let q of attempt.exam.questions; let i = index"
+                            class="mb-4 pb-4 border-bottom last:border-0">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h6 class="fw-bold">Q{{ i+1 }}. {{ q.question.content.text }}</h6>
+                                <span class="badge bg-light text-dark border">{{ q.marks }} Marks</span>
                             </div>
-                        </div>
 
-                        <div class="mt-3 p-3 bg-light rounded-3" *ngIf="getAnswerForQuestion(q.question.id) as ans">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="badge bg-white text-dark border">
-                                        <i class="bi bi-clock me-1"></i> {{ (ans.timeSpentMs || 0) / 1000 |
-                                        number:'1.1-1' }}s
-                                    </span>
-                                    <!-- AI Score available to student? Allow for now -->
+                            <div class="d-flex flex-column gap-2">
+                                <div *ngFor="let opt of q.question.options"
+                                    class="p-2 border rounded d-flex align-items-center"
+                                    [class.bg-success-subtle]="opt.isCorrect" [class.border-success]="opt.isCorrect"
+                                    [class.bg-danger-subtle]="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)"
+                                    [class.border-danger]="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)">
+
+                                    <i class="bi bi-check-circle-fill text-success me-2" *ngIf="opt.isCorrect"></i>
+                                    <i class="bi bi-x-circle-fill text-danger me-2"
+                                        *ngIf="!opt.isCorrect && isOptionSelected(q.question.id, opt.id)"></i>
+                                    <i class="bi bi-circle text-muted me-2"
+                                        *ngIf="!opt.isCorrect && !isOptionSelected(q.question.id, opt.id)"></i>
+
+                                    {{ opt.text }}
                                 </div>
                             </div>
-                            <div *ngIf="ans.aiFeedback" class="small text-muted fst-italic border-start border-3 ps-2"
-                                [class.border-success]="ans.aiScore >= 80"
-                                [class.border-warning]="ans.aiScore >= 40 && ans.aiScore < 80"
-                                [class.border-danger]="ans.aiScore < 40">
-                                <strong>AI Insight:</strong> {{ ans.aiFeedback }}
+
+                            <div class="mt-3 p-3 bg-light rounded-3" *ngIf="getAnswerForQuestion(q.question.id) as ans">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="badge bg-white text-dark border">
+                                            <i class="bi bi-clock me-1"></i> {{ (ans.timeSpentMs || 0) / 1000 |
+                                            number:'1.1-1' }}s
+                                        </span>
+                                        <!-- AI Score available to student? Allow for now -->
+                                    </div>
+                                </div>
+                                <div *ngIf="ans.aiFeedback"
+                                    class="small text-muted fst-italic border-start border-3 ps-2"
+                                    [class.border-success]="ans.aiScore >= 80"
+                                    [class.border-warning]="ans.aiScore >= 40 && ans.aiScore < 80"
+                                    [class.border-danger]="ans.aiScore < 40">
+                                    <strong>AI Insight:</strong> {{ ans.aiFeedback }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Performance Summary / AI Coach -->
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Performance</h6>
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><i class="bi bi-calendar me-2 text-muted"></i> Date: {{ attempt.startedAt |
-                            date:'mediumDate' }}</li>
-                        <li class="mb-2"><i class="bi bi-clock me-2 text-muted"></i> Time Taken: {{ getDurationString()
-                            }}</li>
-                        <!-- Simplification for MVP -->
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card bg-primary text-white border-0 rounded-4 shadow-sm p-3">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-robot fs-1 me-3"></i>
-                    <div>
-                        <h6 class="fw-bold mb-0">AI Coach</h6>
-                        <small class="opacity-75">Your personalized feedback</small>
+            <!-- Performance Summary / AI Coach -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Performance</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-calendar me-2 text-muted"></i> Date: {{ attempt.startedAt |
+                                date:'mediumDate' }}</li>
+                            <li class="mb-2"><i class="bi bi-clock me-2 text-muted"></i> Time Taken: {{
+                                getDurationString()
+                                }}</li>
+                            <!-- Simplification for MVP -->
+                        </ul>
                     </div>
                 </div>
-                <p class="small mb-0 opacity-75">
-                    "Great job on the hard questions! Review the topics in q3 and q5 to improve your score next time."
-                    <!-- Placeholder, ideally aggregated AI insight -->
-                </p>
+
+                <div class="card bg-primary text-white border-0 rounded-4 shadow-sm p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-robot fs-1 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-0">AI Coach</h6>
+                            <small class="opacity-75">Your personalized feedback</small>
+                        </div>
+                    </div>
+                    <p class="small mb-0 opacity-75">
+                        "{{ aiCoachFeedback }}"
+                    </p>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div *ngIf="loading" class="vh-100 d-flex justify-content-center align-items-center">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading Result...</span>
+    <!-- Spinner -->
+    <div *ngIf="loading" class="vh-100 d-flex justify-content-center align-items-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading Result...</span>
+        </div>
     </div>
 </div>

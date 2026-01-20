@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Query, Param } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '@saas-platform/auth';
 
@@ -23,9 +23,19 @@ export class ReportsController {
     @Get('student/full-report')
     async getFullReport(@Req() req: any, @Query('userId') userId?: string) {
         const targetId = this.resolveUserId(req, userId);
-        return {
-            content: await this.reportsService.getComprehensiveReport(targetId)
-        };
+        return this.reportsService.getComprehensiveReport(targetId);
+    }
+
+    @Get('student/history')
+    async getReportHistory(@Req() req: any, @Query('userId') userId?: string) {
+        const targetId = this.resolveUserId(req, userId);
+        return this.reportsService.getReportHistory(targetId);
+    }
+
+    @Get('student/history/:id')
+    async getReportById(@Req() req: any, @Param('id') id: string, @Query('userId') userId?: string) {
+        const targetId = this.resolveUserId(req, userId);
+        return this.reportsService.getReportById(targetId, id);
     }
     @Get('student/summary')
     async getSummary(@Req() req: any, @Query('userId') userId?: string) {

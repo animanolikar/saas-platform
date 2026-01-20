@@ -686,7 +686,7 @@ export class ExamsService {
                     where: { userId: userId },
                     orderBy: { startedAt: 'desc' },
                     take: 1,
-                    select: { status: true, totalScore: true, result: true, startedAt: true, submittedAt: true }
+                    select: { id: true, status: true, totalScore: true, result: true, startedAt: true, submittedAt: true }
                 }
             },
             orderBy: { createdAt: 'desc' }

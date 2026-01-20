@@ -34,4 +34,16 @@ export class ReportsService {
         if (userId) params.userId = userId;
         return this.http.get<{ content: string }>(`${this.apiUrl}/student/full-report`, { params });
     }
+
+    getReportHistory(userId?: string): Observable<any[]> {
+        const params: any = {};
+        if (userId) params.userId = userId;
+        return this.http.get<any[]>(`${this.apiUrl}/student/history`, { params });
+    }
+
+    getReportById(reportId: string, userId?: string): Observable<any> {
+        const params: any = {};
+        if (userId) params.userId = userId;
+        return this.http.get<any>(`${this.apiUrl}/student/history/${reportId}`, { params });
+    }
 }

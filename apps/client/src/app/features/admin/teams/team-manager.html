@@ -19,19 +19,7 @@
                                 name="desc" placeholder="Optional description..."></textarea>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <label class="form-label fw-bold small text-uppercase text-secondary">Academic
-                                    Year</label>
-                                <input type="text" class="form-control bg-light border-0" [(ngModel)]="newTeamYear"
-                                    name="year" placeholder="e.g. 2025-26">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold small text-uppercase text-secondary">Batch</label>
-                                <input type="text" class="form-control bg-light border-0" [(ngModel)]="newTeamBatch"
-                                    name="batch" placeholder="e.g. A">
-                            </div>
-                        </div>
+
 
                         <div *ngIf="error" class="alert alert-danger py-2 small mb-3">{{ error }}</div>
                         <div *ngIf="success" class="alert alert-success py-2 small mb-3">{{ success }}</div>

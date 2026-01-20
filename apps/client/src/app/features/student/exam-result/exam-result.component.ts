@@ -13,6 +13,7 @@ export class StudentExamResultComponent implements OnInit {
     attemptId: string | null = null;
     attempt: any = null;
     loading = false;
+    error: string | null = null;
 
     constructor(
         private route: ActivatedRoute,
@@ -26,20 +27,25 @@ export class StudentExamResultComponent implements OnInit {
             this.attemptId = params.get('attemptId');
             if (this.attemptId) {
                 this.loadAttemptDetails();
+            } else {
+                this.error = 'Invalid attempt ID';
             }
         });
     }
 
     loadAttemptDetails() {
         this.loading = true;
+        this.error = null;
         this.examsService.getAttemptDetails(this.attemptId!).subscribe({
             next: (data) => {
                 this.attempt = data;
                 this.loading = false;
+                this.generateAiFeedback();
                 this.cdr.detectChanges();
             },
             error: (err) => {
                 console.error('Failed to load details', err);
+                this.error = 'Failed to load result details. Please try again.';
                 this.loading = false;
                 this.cdr.detectChanges();
             }
@@ -53,6 +59,29 @@ export class StudentExamResultComponent implements OnInit {
     isOptionSelected(questionId: string, optionId: string) {
         const ans = this.getAnswerForQuestion(questionId);
         return ans?.selectedOptionId === optionId;
+    }
+
+    aiCoachFeedback: string = '';
+
+    generateAiFeedback() {
+        if (!this.attempt || !this.attempt.result) return;
+
+        const percentage = this.attempt.result.percentage || 0;
+        let feedback = '';
+
+        if (percentage >= 90) {
+            feedback = "Outstanding performance! You've demonstrated mastery of this topic. Keep up the excellent work!";
+        } else if (percentage >= 75) {
+            feedback = "Great job! You have a solid understanding. Review the few incorrect answers to achieve perfection next time.";
+        } else if (percentage >= 60) {
+            feedback = "Good effort. You're on the right track, but there are some gaps. Focus on the questions you missed to improve your score.";
+        } else if (percentage >= 40) {
+            feedback = "You've passed, but there's room for improvement. We recommend reviewing the study material for the topics covered in the incorrect questions.";
+        } else {
+            feedback = "Don't be discouraged. Review the detailed solutions below to understand where you went wrong, and try again when you're ready.";
+        }
+
+        this.aiCoachFeedback = feedback;
     }
 
     getDurationString(): string {

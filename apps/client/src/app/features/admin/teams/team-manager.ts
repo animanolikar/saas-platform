@@ -27,8 +27,6 @@ export class TeamManagerComponent implements OnInit {
   // New Team Form
   newTeamName = '';
   newTeamDesc = '';
-  newTeamYear = '';
-  newTeamBatch = '';
   error = '';
   success = '';
 
@@ -75,14 +73,13 @@ export class TeamManagerComponent implements OnInit {
     if (!this.newTeamName) return;
 
     this.creating = true;
-    this.teamsService.createTeam(this.newTeamName, this.newTeamDesc, this.newTeamYear, this.newTeamBatch).subscribe({
+    // Removed year and batch from call
+    this.teamsService.createTeam(this.newTeamName, this.newTeamDesc).subscribe({
       next: (team) => {
         this.success = 'Team created successfully!';
         this.creating = false;
         this.newTeamName = '';
         this.newTeamDesc = '';
-        this.newTeamYear = '';
-        this.newTeamBatch = '';
         this.loadTeams();
         setTimeout(() => this.success = '', 3000);
         this.cd.detectChanges();
