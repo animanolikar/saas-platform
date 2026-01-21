@@ -19,6 +19,17 @@ fi
 echo "✅ Using: $DOCKER_COMPOSE"
 echo "✅ Docker environment verified."
 
+# Configure Environment
+MODE="prod" # Default to production for deployment
+if [ "$1" == "--dev" ]; then
+    MODE="dev"
+fi
+
+echo "🔧 Configuring environment for: $MODE"
+chmod +x set-env.sh
+./set-env.sh $MODE
+
+
 # 1. Stop existing services
 echo "🛑 Stopping existing services..."
 $DOCKER_COMPOSE down

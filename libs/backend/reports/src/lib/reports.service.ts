@@ -234,7 +234,7 @@ export class ReportsService {
         const reportContent = await this.aiService.generateReportMarkdown(prompt);
 
         // 3. Save Report to History
-        await (this.prisma as any).studentAnalyticsReport.create({
+        await this.prisma.studentAnalyticsReport.create({
             data: {
                 userId: user.id,
                 content: reportContent,
@@ -260,7 +260,7 @@ export class ReportsService {
     }
 
     async getReportHistory(userId: string) {
-        return (this.prisma as any).studentAnalyticsReport.findMany({
+        return this.prisma.studentAnalyticsReport.findMany({
             where: { userId },
             orderBy: { createdAt: 'desc' },
             select: { id: true, createdAt: true, metadata: true }
@@ -268,7 +268,7 @@ export class ReportsService {
     }
 
     async getReportById(userId: string, reportId: string) {
-        const report = await (this.prisma as any).studentAnalyticsReport.findFirst({
+        const report = await this.prisma.studentAnalyticsReport.findFirst({
             where: { id: reportId, userId }
         });
         if (!report) throw new Error('Report not found');
