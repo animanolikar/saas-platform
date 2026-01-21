@@ -13,7 +13,12 @@ CREATE TABLE IF NOT EXISTS "StudentAnalyticsReport" (
 CREATE INDEX IF NOT EXISTS "StudentAnalyticsReport_userId_idx" ON "StudentAnalyticsReport"("userId");
 
 -- AddForeignKey
-ALTER TABLE "StudentAnalyticsReport" ADD CONSTRAINT "StudentAnalyticsReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'StudentAnalyticsReport_userId_fkey') THEN
+        ALTER TABLE "StudentAnalyticsReport" ADD CONSTRAINT "StudentAnalyticsReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS "ExamAssignment" (
@@ -37,10 +42,25 @@ CREATE INDEX IF NOT EXISTS "ExamAssignment_teamId_idx" ON "ExamAssignment"("team
 CREATE INDEX IF NOT EXISTS "ExamAssignment_userId_idx" ON "ExamAssignment"("userId");
 
 -- AddForeignKey
-ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_examId_fkey" FOREIGN KEY ("examId") REFERENCES "Exam"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ExamAssignment_examId_fkey') THEN
+        ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_examId_fkey" FOREIGN KEY ("examId") REFERENCES "Exam"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ExamAssignment_teamId_fkey') THEN
+        ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ExamAssignment_userId_fkey') THEN
+        ALTER TABLE "ExamAssignment" ADD CONSTRAINT "ExamAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
