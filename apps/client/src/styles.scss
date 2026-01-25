@@ -4,6 +4,8 @@ $danger: #D93444; // Darker shade of primary
 
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons.css';
+@import '../../../node_modules/katex/dist/katex.min.css';
+
 @import 'quill/dist/quill.core.css';
 @import 'quill/dist/quill.snow.css';
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');

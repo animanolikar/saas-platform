@@ -46,4 +46,8 @@ export class ReportsService {
         if (userId) params.userId = userId;
         return this.http.get<any>(`${this.apiUrl}/student/history/${reportId}`, { params });
     }
+
+    getTestAnalysis(attemptId: string, force = false): Observable<{ content: string }> {
+        return this.http.get<{ content: string }>(`${this.apiUrl}/student/attempt/${attemptId}/analyze?force=${force}`);
+    }
 }

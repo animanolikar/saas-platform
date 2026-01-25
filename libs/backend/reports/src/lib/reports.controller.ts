@@ -43,6 +43,13 @@ export class ReportsController {
         return this.reportsService.getDashboardSummary(targetId);
     }
 
+    @Get('student/attempt/:attemptId/analyze')
+    async analyzeAttempt(@Req() req: any, @Param('attemptId') attemptId: string, @Query('force') force?: string) {
+        // We might want to verify user owns the attempt here.
+        const shouldForce = force === 'true';
+        return this.reportsService.getTestAnalysis(attemptId, shouldForce);
+    }
+
     private resolveUserId(req: any, queryUserId?: string): string {
         const user = req.user;
         if (queryUserId && (user.role === 'ORG_ADMIN' || user.role === 'STAFF')) {

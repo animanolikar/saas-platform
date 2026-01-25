@@ -58,7 +58,7 @@
                                 <div class="text-truncate fw-medium">
                                     <i *ngIf="q.content.imageUrl" class="bi bi-image text-primary me-1"
                                         title="Has Image"></i>
-                                    {{ q.content.text }}
+                                    <span [innerHTML]="q.content.text | mathRender"></span>
                                 </div>
                                 <div class="small text-muted">{{ q.options?.length || 0 }} Options</div>
                             </td>

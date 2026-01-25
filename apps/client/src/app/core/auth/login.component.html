@@ -134,5 +134,34 @@
             </div>
 
         </div>
+        <!-- Hidden logout button for accessibility if needed, but the modal handles interaction -->
+
+        <!-- Logout Confirmation Modal (Bootstrap) -->
+        <div class="modal fade show" tabindex="-1" style="display: block; background: rgba(0,0,0,0.5);"
+            *ngIf="showLogoutDialog" role="dialog" aria-modal="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 shadow-lg border-0">
+                    <div class="modal-body text-center p-5">
+                        <div class="mb-4 text-warning">
+                            <i class="bi bi-box-arrow-right display-1"></i>
+                        </div>
+                        <h3 class="mb-3 fw-bold">Already Signed In</h3>
+                        <p class="text-muted mb-4">
+                            You are currently logged in as <strong>{{ currentUser?.firstName || currentUser?.email
+                                }}</strong>.
+                            <br>Do you want to sign out?
+                        </p>
+                        <div class="d-grid gap-3 col-8 mx-auto">
+                            <button type="button" class="btn btn-danger btn-lg rounded-pill" (click)="confirmLogout()">
+                                Yes, Sign Out
+                            </button>
+                            <button type="button" class="btn btn-light btn-lg rounded-pill" (click)="cancelLogout()">
+                                No, Go to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

@@ -8,10 +8,12 @@ declare var bootstrap: any;
 
 import { QuillModule } from 'ngx-quill';
 
+import { MathRenderPipe } from '../../../../core/pipes/math-render.pipe';
+
 @Component({
     selector: 'app-question-list',
     standalone: true,
-    imports: [CommonModule, FormsModule, QuillModule],
+    imports: [CommonModule, FormsModule, QuillModule, MathRenderPipe],
     templateUrl: './question-list.html',
 })
 export class QuestionListComponent implements OnInit {

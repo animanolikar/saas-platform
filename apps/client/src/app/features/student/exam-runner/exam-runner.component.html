@@ -30,7 +30,8 @@
                             <span>+{{ exam.questions[currentQuestionIndex].marks }} marks</span>
                         </div>
 
-                        <h4 class="mb-4 fw-medium">{{ exam.questions[currentQuestionIndex].question.content.text }}</h4>
+                        <h4 class="mb-4 fw-medium"
+                            [innerHTML]="exam.questions[currentQuestionIndex].question.content.text"></h4>
 
                         <!-- Question Image -->
                         <div *ngIf="exam.questions[currentQuestionIndex].question.content.imageUrl"
@@ -53,7 +54,7 @@
                                         [checked]="isOptionSelected(exam.questions[currentQuestionIndex].question.id, opt.id)"
                                         (change)="selectOption(exam.questions[currentQuestionIndex].question.id, opt.id)">
                                 </div>
-                                <span class="ms-2">{{ opt.text }}</span>
+                                <span class="ms-2" [innerHTML]="opt.text | mathRender"></span>
                             </div>
                         </div>
 

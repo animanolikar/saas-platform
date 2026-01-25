@@ -19,7 +19,33 @@ export class LoginComponent {
     showPassword = false;
     currentYear = new Date().getFullYear();
 
+    showLogoutDialog = false;
+    currentUser: any = null;
+
     constructor(private authService: AuthService, private router: Router) { }
+
+    ngOnInit() {
+        if (this.authService.isAuthenticated()) {
+            this.authService.currentUser$.subscribe(user => {
+                this.currentUser = user;
+                this.showLogoutDialog = true;
+            });
+        }
+    }
+
+    confirmLogout() {
+        this.authService.logout();
+        this.showLogoutDialog = false;
+    }
+
+    cancelLogout() {
+        // Redirect back to dashboard based on role
+        if (this.currentUser?.role === 'STUDENT') {
+            this.router.navigate(['/student/dashboard']);
+        } else {
+            this.router.navigate(['/admin']);
+        }
+    }
 
     onSubmit() {
         this.loading = true;

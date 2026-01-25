@@ -4,10 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ExamsService } from '../../../core/services/exams.service';
 import { interval, Subscription } from 'rxjs';
 
+import { MathRenderPipe } from '../../../core/pipes/math-render.pipe';
+
 @Component({
     selector: 'app-exam-runner',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, MathRenderPipe],
     templateUrl: './exam-runner.component.html',
     styleUrls: ['./exam-runner.component.css']
 })

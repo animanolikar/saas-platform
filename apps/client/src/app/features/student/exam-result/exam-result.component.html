@@ -54,7 +54,8 @@
                         <div *ngFor="let q of attempt.exam.questions; let i = index"
                             class="mb-4 pb-4 border-bottom last:border-0">
                             <div class="d-flex justify-content-between mb-2">
-                                <h6 class="fw-bold">Q{{ i+1 }}. {{ q.question.content.text }}</h6>
+                                <h6 class="fw-bold">Q{{ i+1 }}. <span
+                                        [innerHTML]="q.question.content.text | mathRender"></span></h6>
                                 <span class="badge bg-light text-dark border">{{ q.marks }} Marks</span>
                             </div>
 
@@ -71,7 +72,7 @@
                                     <i class="bi bi-circle text-muted me-2"
                                         *ngIf="!opt.isCorrect && !isOptionSelected(q.question.id, opt.id)"></i>
 
-                                    {{ opt.text }}
+                                    <span [innerHTML]="opt.text | mathRender"></span>
                                 </div>
                             </div>
 
@@ -114,7 +115,7 @@
                     </div>
                 </div>
 
-                <div class="card bg-primary text-white border-0 rounded-4 shadow-sm p-3">
+                <div class="card bg-primary text-white border-0 rounded-4 shadow-sm p-3 mb-3">
                     <div class="d-flex align-items-center mb-2">
                         <i class="bi bi-robot fs-1 me-3"></i>
                         <div>
@@ -125,6 +126,22 @@
                     <p class="small mb-0 opacity-75">
                         "{{ aiCoachFeedback }}"
                     </p>
+                </div>
+
+                <!-- AI Diagnosis -->
+                <button
+                    class="btn btn-outline-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 mb-3"
+                    (click)="generateDiagnosis(true)" [disabled]="aiDiagnosisLoading">
+                    <i class="bi bi-arrow-clockwise" *ngIf="!aiDiagnosisLoading"></i>
+                    <span class="spinner-border spinner-border-sm" *ngIf="aiDiagnosisLoading"></span>
+                    {{ aiDiagnosisLoading ? 'Analyzing...' : 'Regenerate Analysis' }}
+                </button>
+
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white" *ngIf="aiDiagnosisReport">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="bi bi-clipboard-data me-2"></i> Diagnosis Report
+                    </h6>
+                    <div class="ai-report-content small" [innerHTML]="aiDiagnosisReport"></div>
                 </div>
             </div>
         </div>

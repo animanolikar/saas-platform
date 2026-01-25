@@ -316,4 +316,142 @@ export class ReportsService {
             change
         };
     }
+    async getTestAnalysis(attemptId: string, forceRegenerate = false) {
+        // 0. Check Cache (if not forced)
+        if (!forceRegenerate) {
+            const existingReport = await this.prisma.studentAnalyticsReport.findFirst({
+                where: { metadata: { path: ['attemptId'], equals: attemptId } }
+            });
+            if (existingReport) return { content: existingReport.content };
+        }
+
+        // 1. Fetch Attempt Data
+        const attempt = await this.prisma.examAttempt.findUnique({
+            where: { id: attemptId },
+            include: {
+                exam: { include: { questions: { include: { question: { include: { tags: { include: { tag: true } } } } } } } },
+                answers: { include: { question: { include: { tags: { include: { tag: true } } } } } },
+                user: true
+            }
+        });
+
+        if (!attempt) throw new Error('Attempt not found');
+
+        // 2. Compute Metrics
+        const totalQuestions = attempt.exam.questions.length;
+        const correctAnswers = attempt.answers.filter(a => a.isCorrect).length;
+        const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+
+        let easyCorrect = 0, easyTotal = 0;
+        let mediumCorrect = 0, mediumTotal = 0;
+        let hardCorrect = 0, hardTotal = 0;
+
+        attempt.answers.forEach(a => {
+            const diff = a.question.difficulty;
+            if (diff === 'EASY') { easyTotal++; if (a.isCorrect) easyCorrect++; }
+            else if (diff === 'MEDIUM') { mediumTotal++; if (a.isCorrect) mediumCorrect++; }
+            else if (diff === 'HARD') { hardTotal++; if (a.isCorrect) hardCorrect++; }
+        });
+
+        // 3. Question-Level Data & Signals
+        const questionData = attempt.answers.map(a => {
+            // Heuristics for Signals
+            let signal = 'Concept Gap'; // Default
+            if (!a.isCorrect) {
+                if (a.timeSpentMs < 10000) signal = 'Guessing / Hasty';
+                else if (a.question.difficulty === 'EASY' && a.timeSpentMs > 60000) signal = 'Overthinking';
+                else if (attempt.exam.durationSeconds && attempt.startedAt && attempt.submittedAt && (new Date(attempt.submittedAt).getTime() - new Date(attempt.startedAt).getTime() > attempt.exam.durationSeconds * 1000 * 0.9)) signal = 'Time Pressure';
+            }
+
+            return {
+                id: a.questionId,
+                text: (a.question.content as any)?.text ? (a.question.content as any).text.substring(0, 100) + '...' : 'Question text missing',
+                tag: a.question.tags.map(t => t.tag.name).join(', '),
+                difficulty: a.question.difficulty,
+                isCorrect: a.isCorrect,
+                timeSpentSeconds: Math.round(a.timeSpentMs / 1000),
+                signal: a.isCorrect ? 'Mastered' : signal
+            };
+        });
+
+        // 4. Construct Prompt
+        const prompt = `
+        TEST-WISE AI DIAGNOSIS & IMPROVEMENT ANALYSIS
+        
+        SYSTEM ROLE
+        You are an AI Learning Diagnostician for competitive exams.
+        Your task is not to motivate, but to diagnose performance gaps and prescribe improvement actions using evidence from test data.
+        
+        INPUT CONTEXT
+        Test Name: ${attempt.exam.title}
+        Score: ${attempt.totalScore}
+        Accuracy: ${accuracy.toFixed(1)}%
+        
+        Difficulty Breakdown (Correct/Total):
+        - Easy: ${easyCorrect}/${easyTotal}
+        - Medium: ${mediumCorrect}/${mediumTotal}
+        - Hard: ${hardCorrect}/${hardTotal}
+
+        Question Data (Sample of mistakes):
+        ${JSON.stringify(questionData.filter(q => !q.isCorrect).slice(0, 15))}
+        
+        YOUR TASK
+        Generate a strictly structured Test-wise Performance Analysis Report.
+        
+        OUTPUT STRUCTURE (STRICT)
+        🔹 1. Test Overview
+        Provide a concise factual summary.
+        
+        🔹 2. Where the Student Went Wrong (Diagnosis Map)
+        A) Topic / Tag-wise Weakness
+        B) Mistake Type Breakdown
+        
+        🔹 3. Root Cause Analysis (Important)
+        Identify why mistakes occurred using evidence.
+        
+        🔹 4. Top 5 Mistakes That Cost Marks
+        List high-impact mistakes. Use the Question Text snippet to identify the question, NOT the ID.
+        Example: "In the question about 'Circular Motion...', you guessed..."
+        
+        🔹 5. Scope of Improvement (Actionable Plan)
+        Specific topics to revise and practice count.
+        
+        🔹 6. Question-Wise AI Feedback (Only for Wrong Questions)
+        Concise feedback for the wrong questions using Question Text for reference.
+        
+        🔹 7. Short-Term Improvement Plan (3–5 Days)
+        Realistic plan.
+
+        RULES
+        - Do not praise or motivate.
+        - Be analytical and evidence-driven.
+        - NEVER refer to "Question ID". Always use the context/topic or text snippet.
+        `;
+
+        // 5. Generate with AI
+        const reportContent = await this.aiService.generateReportMarkdown(prompt);
+
+        // 6. Save
+        await this.prisma.studentAnalyticsReport.create({
+            data: {
+                userId: attempt.userId,
+                content: reportContent,
+                metadata: {
+                    type: 'TEST_WISE',
+                    attemptId: attempt.id,
+                    generatedAt: new Date()
+                }
+            }
+        });
+
+        // 7. Email
+        if (attempt.user && attempt.user.email) {
+            this.logger.log(`[EMAIL] Sending Test Diagnosis to ${attempt.user.email}`);
+            // Assuming existing email service can handle generic templates or we reuse report email
+            this.emailService.sendAiReportEmail(attempt.user.email, attempt.user.firstName || 'Student', reportContent)
+                .catch(err => this.logger.error('Failed to email diagnosis', err));
+        }
+
+        return { content: reportContent };
+    }
 }

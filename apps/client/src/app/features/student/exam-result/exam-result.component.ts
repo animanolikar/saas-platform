@@ -2,11 +2,14 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { ExamsService } from '../../../core/services/exams.service';
+import { ReportsService } from '../../../core/services/reports.service';
+import { MathRenderPipe } from '../../../core/pipes/math-render.pipe';
+import { marked } from 'marked';
 
 @Component({
     selector: 'app-student-exam-result',
     standalone: true,
-    imports: [CommonModule, RouterModule, DecimalPipe, DatePipe],
+    imports: [CommonModule, RouterModule, DecimalPipe, DatePipe, MathRenderPipe],
     templateUrl: './exam-result.component.html',
 })
 export class StudentExamResultComponent implements OnInit {
@@ -15,10 +18,14 @@ export class StudentExamResultComponent implements OnInit {
     loading = false;
     error: string | null = null;
 
+    aiDiagnosisLoading = false;
+    aiDiagnosisReport: string | null = null;
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
         private examsService: ExamsService,
+        private reportsService: ReportsService,
         private cdr: ChangeDetectorRef
     ) { }
 
@@ -41,6 +48,7 @@ export class StudentExamResultComponent implements OnInit {
                 this.attempt = data;
                 this.loading = false;
                 this.generateAiFeedback();
+                this.generateDiagnosis(false); // Auto-load (cached) analysis
                 this.cdr.detectChanges();
             },
             error: (err) => {
@@ -99,5 +107,24 @@ export class StudentExamResultComponent implements OnInit {
 
         if (minutes > 0) return `${minutes}m ${seconds}s`;
         return `${seconds}s`;
+    }
+
+    async generateDiagnosis(force = false) {
+        if (!this.attemptId) return;
+        this.aiDiagnosisLoading = true;
+
+        this.reportsService.getTestAnalysis(this.attemptId, force).subscribe({
+            next: async (res) => {
+                this.aiDiagnosisReport = await marked.parse(res.content);
+                this.aiDiagnosisLoading = false;
+                this.cdr.detectChanges();
+            },
+            error: (err) => {
+                console.error(err);
+                // alert('Failed to generate AI Diagnosis'); // Suppress error for auto-load to avoid annoying popups
+                this.aiDiagnosisLoading = false;
+                this.cdr.detectChanges();
+            }
+        });
     }
 }
