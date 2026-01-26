@@ -6,12 +6,14 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { ExamsService } from '../../../../core/services/exams.service';
 import { QuestionsService } from '../../../../core/services/questions.service';
 
+import { MathRenderPipe } from '../../../../core/pipes/math-render.pipe';
+
 declare var bootstrap: any;
 
 @Component({
   selector: 'app-exam-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DragDropModule],
+  imports: [CommonModule, FormsModule, RouterModule, DragDropModule, MathRenderPipe],
   templateUrl: './exam-builder.component.html'
 })
 export class ExamBuilderComponent implements OnInit {
