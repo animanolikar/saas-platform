@@ -18,11 +18,17 @@ import { MathRenderPipe } from '../../../../core/pipes/math-render.pipe';
 })
 export class QuestionListComponent implements OnInit {
     allQuestions: any[] = [];
+    filteredQuestions: any[] = []; // Store filtered results
     questions: any[] = [];
     loading = false;
     saving = false;
     error = '';
     success = '';
+
+    // Search & Filter
+    searchQuery = '';
+    tags: string[] = [];
+    selectedTag: string | null = null;
 
     // Pagination
     pager: PageState = {} as PageState;
@@ -62,17 +68,56 @@ export class QuestionListComponent implements OnInit {
         this.loading = true;
         this.questionsService.getQuestions().subscribe({
             next: (data) => {
-                this.allQuestions = data;
-                this.setPage(1);
+                this.allQuestions = Array.isArray(data) ? data : [];
+                this.extractTags();
+                this.filterQuestions(); // Initial filter (shows all)
                 this.loading = false;
                 this.cdr.detectChanges();
             },
             error: (err) => {
-                this.error = 'Failed to load questions';
+                this.error = 'Failed to load questions. Please ensure the backend server is running.';
+                console.error('Error loading questions:', err);
                 this.loading = false;
                 this.cdr.detectChanges();
             }
         });
+    }
+
+    extractTags() {
+        const tagSet = new Set<string>();
+        if (this.allQuestions) {
+            this.allQuestions.forEach(q => {
+                if (q.tags) {
+                    q.tags.forEach((t: any) => {
+                        if (t.tag?.name) tagSet.add(t.tag.name);
+                    });
+                }
+            });
+        }
+        this.tags = Array.from(tagSet).sort();
+    }
+
+    filterQuestions() {
+        let filtered = this.allQuestions;
+
+        // Filter by Tag
+        if (this.selectedTag) {
+            filtered = filtered.filter(q =>
+                q.tags && q.tags.some((t: any) => t.tag?.name === this.selectedTag)
+            );
+        }
+
+        // Filter by Search Query
+        if (this.searchQuery) {
+            const lower = this.searchQuery.toLowerCase();
+            filtered = filtered.filter(q =>
+                (q.content?.text && q.content.text.toLowerCase().includes(lower)) ||
+                (q.tags && q.tags.some((t: any) => t.tag?.name?.toLowerCase().includes(lower)))
+            );
+        }
+
+        this.filteredQuestions = filtered;
+        this.setPage(1); // Reset to first page of results
     }
 
     setPage(page: number) {
@@ -80,7 +125,7 @@ export class QuestionListComponent implements OnInit {
             return;
         }
         this.currentPage = page;
-        this.pager = this.paginationService.paginate(this.allQuestions, page, this.pageSize);
+        this.pager = this.paginationService.paginate(this.filteredQuestions, page, this.pageSize);
         this.questions = this.pager.pagedItems;
         this.pages = this.paginationService.getPages(this.pager.totalPages);
     }

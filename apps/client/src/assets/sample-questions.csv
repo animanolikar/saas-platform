@@ -1,5 +1,0 @@
-content,type,difficulty,option1,option2,option3,option4,correctOption,tags,explanation
-"What is the speed of light?",MCQ_SINGLE,EASY,"3x10^8 m/s","3x10^6 m/s","300 km/h","Infinite",1,"Physics,Optics","Light travels at approximately 299,792,458 meters per second in a vacuum."
-"Which of these are Noble Gases?",MCQ_MULTI,MEDIUM,"Helium","Oxygen","Neon","Nitrogen",1,"Chemistry,Periodic Table","Helium and Neon are noble gases."
-"Who discovered Gravity?",MCQ_SINGLE,EASY,"Newton","Einstein","Galileo","Tesla",1,"Physics,History","Sir Isaac Newton formulated the laws of motion and universal gravitation."
-"Solve: 5x + 3 = 18",MCQ_SINGLE,MEDIUM,"2","3","4","5",2,"Math,Algebra","5x = 15 -> x = 3"
