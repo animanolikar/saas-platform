@@ -218,7 +218,10 @@
                             <label class="form-label fw-bold">Tags</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" [(ngModel)]="tagInput" name="tagInput"
-                                    (keyup.enter)="addTag()" placeholder="Type tag and press Enter">
+                                    (keyup.enter)="addTag()" placeholder="Type tag and press Enter" list="existingTags">
+                                <datalist id="existingTags">
+                                    <option *ngFor="let tag of tags" [value]="tag"></option>
+                                </datalist>
                                 <button class="btn btn-outline-secondary" type="button" (click)="addTag()">Add</button>
                             </div>
                             <div class="d-flex gap-2 flex-wrap mt-2">
