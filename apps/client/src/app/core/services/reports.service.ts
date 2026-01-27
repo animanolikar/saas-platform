@@ -50,4 +50,10 @@ export class ReportsService {
     getTestAnalysis(attemptId: string, force = false): Observable<{ content: string }> {
         return this.http.get<{ content: string }>(`${this.apiUrl}/student/attempt/${attemptId}/analyze?force=${force}`);
     }
+
+    getParentRecommendations(userId?: string): Observable<{ recommendations: string[] }> {
+        const params: any = {};
+        if (userId) params.userId = userId;
+        return this.http.get<{ recommendations: string[] }>(`${this.apiUrl}/student/parent-recommendations`, { params });
+    }
 }

@@ -143,6 +143,84 @@ export class ExamsService {
         return sanitizedExam;
     }
 
+    async saveAttemptProgress(orgId: string, userId: string, examId: string, answers: { [key: string]: string }) {
+        // 1. Verify Attempt Exists and is IN_PROGRESS
+        const attempt = await this.prisma.examAttempt.findFirst({
+            where: {
+                examId: examId,
+                userId: userId,
+                status: 'IN_PROGRESS'
+            }
+        });
+
+        if (!attempt) {
+            // No active attempt to save
+            return null;
+        }
+
+        // 2. Fetch Questions to map IDs
+        const exam = await this.prisma.exam.findFirst({
+            where: { id: examId },
+            include: { questions: { include: { question: { include: { options: true } } } } }
+        });
+        if (!exam) return null;
+
+        // 3. Upsert Answers
+        // We do this by iterating and using upsert or delete/create. 
+        // For efficiency in MVP, we can iterate.
+        for (const eq of exam.questions) {
+            const answerPayload = answers[eq.question.id] as any;
+            if (!answerPayload) continue; // No answer for this Q
+
+            const submittedOptionId = (typeof answerPayload === 'object' && answerPayload !== null) ? answerPayload.optionId : answerPayload;
+            const timeSpentMs = (typeof answerPayload === 'object' && answerPayload !== null) ? (answerPayload.timeSpentMs || 0) : 0;
+
+            // Check correctness merely for storage (not grading yet, or pre-grade?)
+            // We can pre-calculate or just store raw. Let's store.
+            let isCorrect = false;
+            let marksAwarded = 0;
+            if (submittedOptionId) {
+                const selectedOption = eq.question.options.find(o => o.id === submittedOptionId);
+                if (selectedOption && selectedOption.isCorrect) {
+                    isCorrect = true;
+                    marksAwarded = eq.marks;
+                } else {
+                    marksAwarded = -eq.negativeMarks;
+                }
+            }
+
+            // Find existing answer record
+            const existingAnswer = await this.prisma.attemptAnswer.findFirst({
+                where: { attemptId: attempt.id, questionId: eq.question.id }
+            });
+
+            if (existingAnswer) {
+                await this.prisma.attemptAnswer.update({
+                    where: { id: existingAnswer.id },
+                    data: {
+                        selectedOptionId: submittedOptionId || null,
+                        timeSpentMs: timeSpentMs,
+                        isCorrect, // Optional update
+                        marksAwarded // Optional update
+                    }
+                });
+            } else {
+                await this.prisma.attemptAnswer.create({
+                    data: {
+                        attemptId: attempt.id,
+                        questionId: eq.question.id,
+                        selectedOptionId: submittedOptionId || null,
+                        timeSpentMs: timeSpentMs,
+                        isCorrect,
+                        marksAwarded
+                    }
+                });
+            }
+        }
+
+        return { success: true };
+    }
+
     async submitExam(orgId: string, userId: string, examId: string, answers: { [key: string]: string }, telemetry: any[]) {
         console.log('Service: submitting exam', { orgId, userId, examId, answersKeys: Object.keys(answers), telemetryEvents: telemetry?.length });
 
@@ -331,10 +409,17 @@ export class ExamsService {
 
     async getStudentHistory(orgId: string, userId: string) {
         return this.prisma.examAttempt.findMany({
-            where: { organizationId: orgId, userId: userId },
+            where: {
+                organizationId: orgId,
+                userId: userId,
+                status: { in: ['SUBMITTED', 'EVALUATED'] }
+            },
             include: {
                 exam: {
                     select: { title: true, durationSeconds: true }
+                },
+                _count: {
+                    select: { answers: true }
                 }
             },
             orderBy: { startedAt: 'desc' }

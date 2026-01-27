@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-reset-password',
@@ -36,7 +37,7 @@ export class ResetPasswordComponent implements OnInit {
         this.success = '';
         this.error = '';
 
-        this.http.post<{ message: string }>('http://localhost:3000/api/auth/reset-password', {
+        this.http.post<{ message: string }>(`${environment.apiUrl}/auth/reset-password`, {
             token: this.token,
             newCode: this.password
         })

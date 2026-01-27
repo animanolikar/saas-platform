@@ -7,13 +7,14 @@ import { ExamsService } from '../../../../core/services/exams.service';
 import { QuestionsService } from '../../../../core/services/questions.service';
 
 import { MathRenderPipe } from '../../../../core/pipes/math-render.pipe';
+import { QuillModule } from 'ngx-quill';
 
 declare var bootstrap: any;
 
 @Component({
   selector: 'app-exam-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, DragDropModule, MathRenderPipe],
+  imports: [CommonModule, FormsModule, RouterModule, DragDropModule, MathRenderPipe, QuillModule],
   templateUrl: './exam-builder.component.html'
 })
 export class ExamBuilderComponent implements OnInit {
@@ -24,6 +25,23 @@ export class ExamBuilderComponent implements OnInit {
   allQuestions: any[] = [];
   filteredQuestions: any[] = [];
   searchQuery = '';
+
+  // New Question Form Model
+  newQuestion: any = {
+    content: { text: '' },
+    type: 'MCQ_SINGLE',
+    difficulty: 'MEDIUM',
+    explanation: '',
+    options: [
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false }
+    ],
+    tags: []
+  };
+  tagInput = '';
+  savingQuestion = false;
 
   // UI State
   loading = false;
@@ -393,7 +411,8 @@ export class ExamBuilderComponent implements OnInit {
 
 
   // Edit Exam Settings
-  editExamData = { title: '', durationSeconds: 0, passPercentage: 0, scheduledAt: '' };
+  editExamData = { title: '', durationSeconds: 0, passPercentage: 0, scheduledAt: '', maxAttempts: 0, allowResume: false };
+  tempDurationMinutes = 60;
 
   openEditExamModal() {
     if (!this.exam) return;
@@ -401,8 +420,11 @@ export class ExamBuilderComponent implements OnInit {
       title: this.exam.title,
       durationSeconds: this.exam.durationSeconds,
       passPercentage: this.exam.passPercentage,
-      scheduledAt: this.exam.scheduledAt ? new Date(this.exam.scheduledAt).toISOString().slice(0, 16) : ''
+      scheduledAt: this.exam.scheduledAt ? new Date(this.exam.scheduledAt).toISOString().slice(0, 16) : '',
+      maxAttempts: this.exam.settings?.maxAttempts || 0, // 0 means unlimited
+      allowResume: this.exam.settings?.allowResume || false
     };
+    this.tempDurationMinutes = Math.floor(this.exam.durationSeconds / 60);
 
     if (typeof bootstrap !== 'undefined') {
       const modalEl = document.getElementById('editExamModal');
@@ -428,9 +450,14 @@ export class ExamBuilderComponent implements OnInit {
 
     const payload = {
       title: this.editExamData.title,
-      durationSeconds: this.editExamData.durationSeconds,
+      durationSeconds: this.tempDurationMinutes * 60,
       passPercentage: this.editExamData.passPercentage,
       scheduledAt: this.editExamData.scheduledAt ? new Date(this.editExamData.scheduledAt).toISOString() : null,
+      settings: {
+        ...this.exam.settings,
+        maxAttempts: this.editExamData.maxAttempts,
+        allowResume: this.editExamData.allowResume
+      },
       // Preserve other fields
       description: this.exam.description,
       instructions: this.exam.instructions,
@@ -446,6 +473,88 @@ export class ExamBuilderComponent implements OnInit {
       error: (err: any) => {
         console.error(err);
         alert('Failed to update exam settings');
+      }
+    });
+  }
+
+  // --- Create Question directly in Builder ---
+
+  openCreateQuestionModal() {
+    this.newQuestion = {
+      content: { text: '', imageUrl: '' },
+      type: 'MCQ_SINGLE',
+      difficulty: 'MEDIUM',
+      explanation: '',
+      options: [
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false }
+      ],
+      tags: []
+    };
+    this.tagInput = '';
+
+    if (typeof bootstrap !== 'undefined') {
+      const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('createQuestionModal'));
+      modal.show();
+    }
+  }
+
+  addTag() {
+    if (this.tagInput.trim()) {
+      this.newQuestion.tags.push(this.tagInput.trim());
+      this.tagInput = '';
+    }
+  }
+
+  removeTag(index: number) {
+    this.newQuestion.tags.splice(index, 1);
+  }
+
+  toggleCorrectOption(index: number) {
+    if (this.newQuestion.type === 'MCQ_SINGLE') {
+      this.newQuestion.options.forEach((opt: any, i: number) => {
+        opt.isCorrect = i === index;
+      });
+    } else if (this.newQuestion.type === 'MCQ_MULTI') {
+      this.newQuestion.options[index].isCorrect = !this.newQuestion.options[index].isCorrect;
+    }
+  }
+
+  saveQuestion() {
+    this.savingQuestion = true;
+
+    if (!this.newQuestion.content.text) {
+      alert('Question text is required');
+      this.savingQuestion = false;
+      return;
+    }
+
+    // 1. Create Question in Bank
+    this.questionsService.createQuestion(this.newQuestion).subscribe({
+      next: (createdQuestion) => {
+        // 2. Add to Exam immediately
+        this.addQuestion(createdQuestion);
+
+        this.savingQuestion = false;
+
+        // Hide Modal
+        if (typeof bootstrap !== 'undefined') {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('createQuestionModal'));
+          modal.hide();
+        }
+
+        // Refresh Bank list
+        this.allQuestions.unshift(createdQuestion);
+        this.filterQuestions();
+        this.extractTags();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Failed to create question.');
+        this.savingQuestion = false;
       }
     });
   }

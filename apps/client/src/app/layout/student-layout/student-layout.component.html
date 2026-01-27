@@ -18,17 +18,25 @@
             </svg>
         </div>
         <nav class="nav flex-column p-3 gap-2">
+            <a routerLink="/student/overview" routerLinkActive="bg-primary-subtle text-primary fw-bold"
+                class="nav-link text-body rounded-3 px-3 py-2">
+                <i class="bi bi-speedometer2 me-2"></i> Overview
+            </a>
             <a routerLink="/student/dashboard" routerLinkActive="bg-primary-subtle text-primary fw-bold"
                 class="nav-link text-body rounded-3 px-3 py-2">
-                <i class="bi bi-grid me-2"></i> Dashboard
+                <i class="bi bi-grid me-2"></i> My Exams
             </a>
             <a routerLink="/student/results" routerLinkActive="bg-primary-subtle text-primary fw-bold"
                 class="nav-link text-body rounded-3 px-3 py-2">
-                <i class="bi bi-journal-check me-2"></i> My Results
+                <i class="bi bi-journal-check me-2"></i> My Progress
             </a>
             <a routerLink="/student/reports" routerLinkActive="bg-primary-subtle text-primary fw-bold"
                 class="nav-link text-body rounded-3 px-3 py-2">
                 <i class="bi bi-bar-chart-line me-2"></i> Analytics
+            </a>
+            <a routerLink="/student/parent-report" routerLinkActive="bg-primary-subtle text-primary fw-bold"
+                class="nav-link text-body rounded-3 px-3 py-2">
+                <i class="bi bi-file-earmark-person me-2"></i> Parent Report
             </a>
         </nav>
         <div class="mt-auto p-3 border-top text-center text-muted small">

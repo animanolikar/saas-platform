@@ -94,8 +94,9 @@
                             </div>
 
                             <div class="fw-bold text-muted pt-1">Q{{ i + 1 }}</div>
-                            <div class="flex-grow-1">
-                                <div class="fw-medium mb-2" [innerHTML]="eq.question.content?.text | mathRender"></div>
+                            <div class="flex-grow-1" style="min-width: 0;">
+                                <div class="fw-medium mb-2 text-truncate-2 text-break"
+                                    [innerHTML]="eq.question.content?.text | mathRender"></div>
                                 <div class="d-flex gap-2">
                                     <span class="badge bg-light text-dark border">{{ eq.question.type }}</span>
                                     <span class="badge bg-success-subtle text-success-emphasis">+{{ eq.marks }}</span>
@@ -117,6 +118,12 @@
         <div class="col-md-5 bg-white d-flex flex-column overflow-hidden shadow-start h-100">
             <!-- Search Bar & Tags -->
             <div class="p-3 border-bottom bg-white z-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 fw-bold">Question Bank</h6>
+                    <button class="btn btn-sm btn-primary" (click)="openCreateQuestionModal()">
+                        <i class="bi bi-plus-lg"></i> New
+                    </button>
+                </div>
                 <div class="input-group mb-2">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
                     <input type="text" class="form-control bg-light border-start-0" placeholder="Search questions..."
@@ -185,10 +192,8 @@
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Duration (Seconds)</label>
-                        <input type="number" class="form-control" [(ngModel)]="editExamData.durationSeconds">
-                        <small class="text-muted">{{ editExamData.durationSeconds / 60 | number:'1.0-0' }}
-                            mins</small>
+                        <label class="form-label fw-bold">Duration (Minutes)</label>
+                        <input type="number" class="form-control" [(ngModel)]="tempDurationMinutes">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">Pass Percentage</label>
@@ -201,6 +206,23 @@
                     <small class="text-muted" style="font-size: 0.8rem;">
                         If set, students cannot start the exam before this time.
                     </small>
+                </div>
+                <!-- New Settings -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Max Attempts</label>
+                        <input type="number" class="form-control" [(ngModel)]="editExamData.maxAttempts"
+                            placeholder="0 for unlimited">
+                        <small class="text-muted" style="font-size: 0.8rem;">0 = Unlimited attempts</small>
+                    </div>
+                    <div class="col-md-6 mb-3 d-flex align-items-center pt-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="resumeCheck"
+                                [(ngModel)]="editExamData.allowResume">
+                            <label class="form-check-label fw-bold" for="resumeCheck">Allow Resume</label>
+                            <div class="text-muted" style="font-size: 0.8rem;">If interrupted, can student resume?</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -243,6 +265,101 @@
     </div>
 </div>
 
+<div class="modal fade" id="createQuestionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Create New Question</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-4">
+                <form>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Question Text</label>
+                            <quill-editor class="content-editor" [styles]="{height: '200px'}"
+                                [(ngModel)]="newQuestion.content.text" name="qText"
+                                placeholder="Enter your question here..."></quill-editor>
+                            <label class="form-label fw-bold mt-2">Image URL (Optional)</label>
+                            <input type="text" class="form-control" [(ngModel)]="newQuestion.content.imageUrl"
+                                name="qImage" placeholder="https://example.com/image.png">
+                            <div *ngIf="newQuestion.content.imageUrl" class="mt-2 text-center p-2 bg-light rounded">
+                                <img [src]="newQuestion.content.imageUrl" alt="Preview"
+                                    style="max-height: 150px; max-width: 100%;">
+                            </div>
+                            <label class="form-label fw-bold mt-2">Explanation (AI Context)</label>
+                            <textarea class="form-control" rows="3" [(ngModel)]="newQuestion.explanation"
+                                name="qExplanation"
+                                placeholder="Explain why the answer is correct (Markdown supported)..."></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Type</label>
+                                <select class="form-select" [(ngModel)]="newQuestion.type" name="qType">
+                                    <option value="MCQ_SINGLE">MCQ Single</option>
+                                    <option value="MCQ_MULTI">MCQ Multi</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Difficulty</label>
+                                <select class="form-select" [(ngModel)]="newQuestion.difficulty" name="qDiff">
+                                    <option value="EASY">Easy</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HARD">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Options</label>
+                            <div *ngFor="let opt of newQuestion.options; let i = index" class="input-group mb-2">
+                                <div class="input-group-text">
+                                    <ng-container *ngIf="newQuestion.type === 'MCQ_SINGLE'">
+                                        <input class="form-check-input mt-0" type="radio" [checked]="opt.isCorrect"
+                                            (change)="toggleCorrectOption(i)" name="correctOption"
+                                            aria-label="Correct option">
+                                    </ng-container>
+                                    <ng-container *ngIf="newQuestion.type === 'MCQ_MULTI'">
+                                        <input class="form-check-input mt-0" type="checkbox" [checked]="opt.isCorrect"
+                                            (change)="toggleCorrectOption(i)" aria-label="Correct option">
+                                    </ng-container>
+                                </div>
+                                <input type="text" class="form-control" [(ngModel)]="opt.text" [name]="'opt'+i"
+                                    placeholder="Option {{i+1}}">
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Tags</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" [(ngModel)]="tagInput" name="tagInput"
+                                    (keyup.enter)="addTag()" placeholder="Type tag and press Enter" list="existingTags">
+                                <datalist id="existingTags">
+                                    <option *ngFor="let tag of tags" [value]="tag"></option>
+                                </datalist>
+                                <button class="btn btn-outline-secondary" type="button" (click)="addTag()">Add</button>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap mt-2">
+                                <span *ngFor="let tag of newQuestion.tags; let i = index"
+                                    class="badge rounded-pill bg-primary pe-1">
+                                    {{ tag }}
+                                    <button type="button" class="btn-close btn-close-white ms-1"
+                                        style="width: 0.5em; height: 0.5em;" (click)="removeTag(i)"></button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" (click)="saveQuestion()" [disabled]="savingQuestion">
+                    {{ savingQuestion ? 'Saving...' : 'Create & Add to Exam' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .fs-xs {

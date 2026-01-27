@@ -14,15 +14,31 @@ export class ReportsService {
     ) { }
 
     async getStudentPerformanceTrend(userId: string) {
-        // Fetch last 10 attempts sorted by date
+        // Fetch last 20 attempts sorted by date (Increased limit for better trend)
         const attempts = await this.prisma.examAttempt.findMany({
-            where: { userId, status: 'EVALUATED' },
+            where: {
+                userId,
+                status: { in: ['SUBMITTED', 'EVALUATED'] }
+            },
             orderBy: { startedAt: 'asc' },
-            take: 10,
+            take: 20,
             include: {
                 exam: {
                     include: {
-                        questions: true
+                        questions: {
+                            include: {
+                                question: {
+                                    include: { tags: { include: { tag: true } } }
+                                }
+                            }
+                        }
+                    }
+                },
+                answers: {
+                    include: {
+                        question: {
+                            include: { tags: { include: { tag: true } } }
+                        }
                     }
                 }
             }
@@ -53,13 +69,47 @@ export class ReportsService {
                 gainLoss = diff > 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
             }
 
+            // Calculate Tag-wise breakdown for this exam
+            const tagStats: Record<string, { obtained: number; total: number }> = {};
+
+            // 1. Calculate Total Marks per Tag (from Exam Questions)
+            a.exam?.questions?.forEach(q => {
+                let tags = q.question.tags.map(t => t.tag.name);
+                if (tags.length === 0) tags = ['General Knowledge'];
+
+                const marks = q.marks || 1;
+                tags.forEach(tag => {
+                    if (!tagStats[tag]) tagStats[tag] = { obtained: 0, total: 0 };
+                    tagStats[tag].total += marks;
+                });
+            });
+
+            // 2. Calculate Obtained Marks per Tag (from Answers)
+            a.answers?.forEach(ans => {
+                let tags = ans.question.tags.map(t => t.tag.name);
+                if (tags.length === 0) tags = ['General Knowledge'];
+
+                const marksAwarded = ans.marksAwarded || 0; // Use actual awarded marks
+                if (marksAwarded > 0) {
+                    tags.forEach(tag => {
+                        if (tagStats[tag]) tagStats[tag].obtained += marksAwarded;
+                    });
+                }
+            });
+
+            const tagScores = Object.keys(tagStats).map(tag => ({
+                tag,
+                percentage: tagStats[tag].total > 0 ? Math.round((tagStats[tag].obtained / tagStats[tag].total) * 100) : 0
+            }));
+
             return {
                 examTitle: a.exam?.title || 'Unknown Exam',
                 date: a.startedAt,
                 score: obtainedScore,
                 totalMarks: totalMarks,
                 percentage: percentage,
-                gainLoss: gainLoss
+                gainLoss: gainLoss,
+                tagScores // New field
             };
         });
 
@@ -76,7 +126,12 @@ export class ReportsService {
     async getTopicAnalysis(userId: string) {
         // Fetch all answers with question tags
         const answers = await this.prisma.attemptAnswer.findMany({
-            where: { attempt: { userId, status: 'EVALUATED' } },
+            where: {
+                attempt: {
+                    userId,
+                    status: { in: ['SUBMITTED', 'EVALUATED'] }
+                }
+            },
             include: {
                 question: {
                     include: { tags: { include: { tag: true } } }
@@ -87,7 +142,10 @@ export class ReportsService {
         const topicStats: Record<string, { correct: number; total: number }> = {};
 
         answers.forEach(ans => {
-            const tags = ans.question.tags.map(qt => qt.tag.name);
+            let tags = ans.question.tags.map(qt => qt.tag.name);
+            if (tags.length === 0) {
+                tags = ['General Knowledge'];
+            }
             tags.forEach(tag => {
                 if (!topicStats[tag]) {
                     topicStats[tag] = { correct: 0, total: 0 };
@@ -108,7 +166,12 @@ export class ReportsService {
     }
     async getDeepDiveMetrics(userId: string) {
         const answers = await this.prisma.attemptAnswer.findMany({
-            where: { attempt: { userId, status: 'EVALUATED' } },
+            where: {
+                attempt: {
+                    userId,
+                    status: { in: ['SUBMITTED', 'EVALUATED'] }
+                }
+            },
             include: { question: true }
         });
 
@@ -278,7 +341,14 @@ export class ReportsService {
         const trendData = await this.getStudentPerformanceTrend(userId);
         const topics = await this.getTopicAnalysis(userId);
 
-        const totalExams = trendData.trends.length;
+        // Fix: Count ALL submitted/evaluated exams without limit
+        const totalExams = await this.prisma.examAttempt.count({
+            where: {
+                userId,
+                status: { in: ['SUBMITTED', 'EVALUATED'] }
+            }
+        });
+
         const avgScore = trendData.cumulative.overallPercentage;
 
         // Consistency Calculation
@@ -453,5 +523,94 @@ export class ReportsService {
         }
 
         return { content: reportContent };
+    }
+
+    async getParentRecommendations(userId: string) {
+        // 1. Gather Context
+        const summary = await this.getDashboardSummary(userId);
+        const trends = await this.getStudentPerformanceTrend(userId);
+        const recentScores = trends.trends.slice(-3).map(t => `${t.percentage}%`).join(', ');
+
+        const availableData = trends.trends.length > 0;
+        if (!availableData) {
+            return {
+                recommendations: [
+                    "Encourage your child to take their first exam to gauge their level.",
+                    "Set a fixed time for study and testing to build a routine.",
+                    "Review the syllabus together to identify comfortable starting topics."
+                ]
+            };
+        }
+
+        // 2. Construct Prompt for Parent Advice
+        const prompt = `
+        Role: Expert Educational Counselor advising a parent.
+        Student Performance Context:
+        - Recent Scores: ${recentScores}
+        - Overall Average: ${summary.avgScore}%
+        - Consistency: ${summary.consistency}
+        - Strongest Subject: ${summary.strongestSubject}
+        
+        Task: Write 3-4 lines of DIRECT, ACTIONABLE advice for the parent.
+        - Focus on what the PARENT can do to support the child.
+        - Tone: Supportive but clear.
+        - Format: JSON array of strings. Example: ["Advice 1", "Advice 2", "Advice 3"]
+        - Do NOT include "Here is the advice" or any preamble. Just the JSON array.
+        `;
+
+        try {
+            // 3. Call AI
+            // We use generateReportMarkdown as it is the available method for text generation
+            const rawMarkdown = await this.aiService.generateReportMarkdown(prompt);
+
+            // 4. Parse JSON from Markdown
+            let jsonString = rawMarkdown;
+            const match = rawMarkdown.match(/```json\n([\s\S]*?)\n```/) || rawMarkdown.match(/```\n([\s\S]*?)\n```/);
+            if (match) {
+                jsonString = match[1];
+            }
+
+            try {
+                const parsed = JSON.parse(jsonString);
+                if (Array.isArray(parsed)) {
+                    // Ensure string array and limit to 4
+                    const recommendations = parsed.map(String).slice(0, 4);
+                    return { recommendations };
+                }
+            } catch (jsonError) {
+                this.logger.warn('Failed to parse AI JSON', jsonError);
+            }
+
+            return this.generateParentAdviceFallback(summary, trends);
+        } catch (e) {
+            this.logger.error('AI Suggestion Failed', e);
+            return this.generateParentAdviceFallback(summary, trends);
+        }
+    }
+
+    // Helper for Rule-Based Fallback (and placeholder until AI is confirmed)
+    private generateParentAdviceFallback(summary: any, trends: any) {
+        const advice = [];
+        const avg = summary.avgScore || 0;
+
+        if (avg > 80) {
+            advice.push("Maintain the current momentum by challenging them with advanced topics.");
+            advice.push("Encourage them to mentor peers; teaching reinforces mastery.");
+            advice.push("Ensure they are resting enough to avoid burnout before major exams.");
+        } else if (avg > 50) {
+            advice.push("Focus on consistency; set a regular daily time for practice exams.");
+            advice.push("Review 'Concept Gap' mistakes together to identify specific weak areas.");
+            advice.push("Celebrate small wins to build confidence and participation.");
+        } else {
+            advice.push("Start with 'Easy' difficulty exams to rebuild confidence.");
+            advice.push("Sit with them during review sessions to understand their specific hurdles.");
+            advice.push("Focus on one subject at a time rather than overwhelming with all subjects.");
+        }
+
+        if (summary.consistency === 'Low') {
+            advice.push("Inconsistency detected: Try to stabilize their study environment/schedule.");
+        }
+
+        return { recommendations: advice.slice(0, 4) };
     }
 }

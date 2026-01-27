@@ -11,6 +11,15 @@
         </div>
     </div>
 
+    <!-- Search Bar -->
+    <div class="mb-4" *ngIf="!loading">
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by exam name..."
+                [(ngModel)]="searchTerm" (ngModelChange)="onSearch()">
+        </div>
+    </div>
+
     <!-- Results Table -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden" *ngIf="!loading">
         <div class="table-responsive">
@@ -25,7 +34,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let attempt of history">
+                    <tr *ngFor="let attempt of paginatedHistory">
                         <td class="ps-4 fw-medium">{{ attempt.exam.title }}</td>
                         <td class="text-muted small">{{ attempt.startedAt | date:'mediumDate' }}</td>
                         <td>
@@ -48,14 +57,35 @@
                                 [routerLink]="['/student/exam', attempt.id, 'result']">View Report</button>
                         </td>
                     </tr>
-                    <tr *ngIf="history.length === 0">
+                    <tr *ngIf="filteredHistory.length === 0">
                         <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="bi bi-clock-history fs-3 mb-2 d-block opacity-50"></i>
-                            No past attempts found.
+                            <i class="bi bi-search fs-3 mb-2 d-block opacity-50" *ngIf="searchTerm"></i>
+                            <i class="bi bi-clock-history fs-3 mb-2 d-block opacity-50" *ngIf="!searchTerm"></i>
+                            {{ searchTerm ? 'No exams found matching "' + searchTerm + '"' : 'No past attempts found.'
+                            }}
                         </td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center"
+            *ngIf="filteredHistory.length > 0">
+            <span class="text-muted small">Showing {{ (currentPage - 1) * pageSize + 1 }} - {{ (currentPage * pageSize)
+                >
+                filteredHistory.length ? filteredHistory.length : (currentPage * pageSize) }} of {{
+                filteredHistory.length }}
+            </span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" (click)="prevPage()" [disabled]="currentPage === 1">
+                    <i class="bi bi-chevron-left"></i> Previous
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="nextPage()"
+                    [disabled]="currentPage === totalPages">
+                    Next <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>

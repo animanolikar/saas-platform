@@ -41,7 +41,7 @@ export class LoginComponent {
     cancelLogout() {
         // Redirect back to dashboard based on role
         if (this.currentUser?.role === 'STUDENT') {
-            this.router.navigate(['/student/dashboard']);
+            this.router.navigate(['/student/overview']);
         } else {
             this.router.navigate(['/admin']);
         }
@@ -60,7 +60,7 @@ export class LoginComponent {
                 }
 
                 if (user?.role === 'STUDENT') {
-                    this.router.navigate(['/student/dashboard']);
+                    this.router.navigate(['/student/overview']);
                 } else {
                     this.router.navigate(['/admin']);
                 }

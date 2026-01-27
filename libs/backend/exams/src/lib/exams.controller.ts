@@ -101,6 +101,13 @@ export class ExamsController {
         return this.examsService.submitExam(orgId, userId, id, body.answers, body.telemetry);
     }
 
+    @Post(':id/save')
+    saveProgress(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+        const orgId = req.user.organizationId;
+        const userId = req.user.id;
+        return this.examsService.saveAttemptProgress(orgId, userId, id, body.answers);
+    }
+
     // --- Assignment Routes ---
 
     @Post(':id/assign')

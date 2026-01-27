@@ -319,5 +319,16 @@ export class ExamRunnerComponent implements OnInit, OnDestroy {
         if (this.cameraStream) {
             this.cameraStream.getTracks().forEach(track => track.stop());
         }
+        // Save Progress on Exit (if not submitting)
+        if (!this.isSubmitting && this.examId && Object.keys(this.answers).length > 0) {
+            // Use sendBeacon for more reliable exit handling? Or regular http.
+            // Since this is SPA navigation destroy, HTTP should work.
+            // Converting Object keys to proper partial submission format logic is in Backend now.
+            // Just send answers.
+            this.examsService.saveProgress(this.examId, this.answers).subscribe({
+                next: () => console.log('Progress stored on exit'),
+                error: (e) => console.error('Failed to store progress on exit', e)
+            });
+        }
     }
 }

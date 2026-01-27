@@ -126,3 +126,22 @@
     </div>
   </div>
 </div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="adminLogoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-body text-center p-4">
+        <div class="mb-3 text-warning">
+          <i class="bi bi-exclamation-circle display-4"></i>
+        </div>
+        <h5 class="fw-bold mb-3">Log Out?</h5>
+        <p class="text-muted mb-4">Are you sure you want to sign out of your account?</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-danger rounded-pill" (click)="confirmLogout()">Yes, Sign Out</button>
+          <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

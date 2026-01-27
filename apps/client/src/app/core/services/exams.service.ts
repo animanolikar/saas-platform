@@ -47,6 +47,10 @@ export class ExamsService {
         return this.http.post<any>(`${this.apiUrl}/${examId}/submit`, { answers, telemetry });
     }
 
+    saveProgress(examId: string, answers: any): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/${examId}/save`, { answers });
+    }
+
     getHistory(): Observable<any[]> {
         return this.http.get<any[]>(`${this.apiUrl}/history`);
     }

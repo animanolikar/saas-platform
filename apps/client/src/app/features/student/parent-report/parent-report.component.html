@@ -1,0 +1,214 @@
+<div class="container p-5">
+    <!-- Header with Overall Status -->
+    <div class="mb-5 border-bottom pb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">Parent Overview</h2>
+            <p class="text-body-secondary lead mb-0">A summary of your child's progress and potential.</p>
+        </div>
+        <div class="text-end" *ngIf="!loading">
+            <div class="text-muted small text-uppercase fw-bold mb-1">Overall Status</div>
+            <span class="badge rounded-pill px-4 py-2 fs-5" [class.bg-success-subtle]="overallStatus === 'Improving'"
+                [class.text-success-emphasis]="overallStatus === 'Improving'"
+                [class.bg-warning-subtle]="overallStatus === 'Needs Attention'"
+                [class.text-warning-emphasis]="overallStatus === 'Needs Attention'"
+                [class.bg-light]="overallStatus === 'Consistent'" [class.text-dark]="overallStatus === 'Consistent'">
+                <i class="bi me-2" [class.bi-graph-up-arrow]="overallStatus === 'Improving'"
+                    [class.bi-exclamation-circle]="overallStatus === 'Needs Attention'"
+                    [class.bi-check-circle]="overallStatus === 'Consistent'"></i>
+                {{ overallStatus }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Analyzing performance data...</p>
+    </div>
+
+    <div *ngIf="!loading" class="d-flex flex-column gap-5">
+
+        <!-- SECTION A: Consistency -->
+        <section>
+            <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-calendar-check me-2"></i>A) Consistency & Attendance
+            </h5>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 bg-success-subtle participation-card">
+                        <div class="card-body text-center p-4">
+                            <h1 class="display-4 fw-bold text-success mb-0">{{ participation.completed }}</h1>
+                            <div class="text-success-emphasis fw-bold text-uppercase small ls-1">Completed Exams</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 bg-light participation-card">
+                        <div class="card-body text-center p-4">
+                            <h1 class="display-4 fw-bold text-body-secondary mb-0">{{ participation.pending }}</h1>
+                            <div class="text-body-secondary fw-bold text-uppercase small ls-1">Pending</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div
+                        class="card border-0 shadow-sm h-100 d-flex align-items-center justify-content-center p-4 text-center">
+                        <p class="mb-0 text-muted fw-medium">
+                            <i class="bi bi-quote fs-3 text-primary d-block mb-2"></i>
+                            {{ participation.pending === 0 ? "Excellent! Your child is fully up to date." : "Consistency
+                            is key. Completing pending exams improves retention." }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION B: Trend -->
+        <section>
+            <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-graph-up me-2"></i>B) Score Progression</h5>
+            <div class="card border-0 shadow-sm p-4">
+                <div class="chart-container">
+                    <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [type]="lineChartType">
+                    </canvas>
+                </div>
+                <div *ngIf="lineChartData.datasets[0]?.data?.length === 0" class="text-center text-muted mt-3">
+                    No completed exams to show trend yet.
+                </div>
+            </div>
+            <p class="text-muted mt-3 small">
+                <i class="bi bi-info-circle me-1"></i>
+                This line tracks performance over time. {{ overallStatus === 'Improving' ? 'Great job! The upward curve
+                shows improvement.' : 'We are looking for a steady upward trend here.' }}
+            </p>
+        </section>
+
+        <div class="row g-5">
+            <!-- SECTION C: Behavior -->
+            <div class="col-md-6">
+                <section>
+                    <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-stopwatch me-2"></i>C) Behaviour Insight
+                        (Speed vs Accuracy)</h5>
+                    <div class="card border-0 shadow-sm p-4 h-100">
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas baseChart [data]="bubbleChartData" [options]="bubbleChartOptions"
+                                [type]="bubbleChartType">
+                            </canvas>
+                        </div>
+                        <div class="alert alert-light border mt-3 mb-0 d-flex align-items-start gap-3">
+                            <i class="bi bi-lightbulb text-warning fs-4"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Observation</h6>
+                                <p class="mb-0 small text-muted">{{ behaviorInsight || "Analyzing behavior..." }}</p>
+                                <p *ngIf="aiSuggestion" class="mb-0 small text-primary mt-1 border-top pt-1">
+                                    <i class="bi bi-robot me-1"></i> {{ aiSuggestion }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- SECTION D: Focus Areas -->
+            <div class="col-md-6">
+                <section>
+                    <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-list-check me-2"></i>D) Topic Focus Areas
+                    </h5>
+                    <div class="card border-0 shadow-sm p-4 h-100">
+                        <div *ngIf="topicAnalysis.length === 0" class="text-center text-muted py-5">
+                            <i class="bi bi-bar-chart small"></i>
+                            <div class="small mt-1">Not enough data available yet.</div>
+                        </div>
+                        <div *ngFor="let item of topicAnalysis" class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium">{{ item.topic }}</span>
+                                <span class="badge rounded-pill" [class.bg-success-subtle]="item.accuracy >= 70"
+                                    [class.text-success-emphasis]="item.accuracy >= 70"
+                                    [class.bg-warning-subtle]="item.accuracy >= 50 && item.accuracy < 70"
+                                    [class.text-warning-emphasis]="item.accuracy >= 50 && item.accuracy < 70"
+                                    [class.bg-danger-subtle]="item.accuracy < 50"
+                                    [class.text-danger-emphasis]="item.accuracy < 50">
+                                    {{ item.accuracy >= 70 ? 'Doing Good' : (item.accuracy < 50 ? 'Needs Support'
+                                        : 'Can Improve' ) }} </span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" [class.bg-danger]="item.accuracy < 50"
+                                    [class.bg-warning]="item.accuracy >= 50 && item.accuracy < 70"
+                                    [class.bg-success]="item.accuracy >= 70" [style.width.%]="item.accuracy"></div>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-3 small mb-0"><i class="bi bi-info-circle me-1"></i> Focus revision on
+                            topics marked 'Needs Support' to boost confidence.</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- SECTION E: Potential -->
+        <section>
+            <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-unlock me-2"></i>E) Potential Unlocked</h5>
+            <div class="card border-0 shadow-sm p-4">
+                <h6 class="fw-bold mb-4">Breakdown of Last Score</h6>
+                <div class="progress" style="height: 40px; font-size: 1rem;">
+                    <div class="progress-bar bg-success" role="progressbar" [style.width.%]="improvementScope.current">
+                        {{ improvementScope.current }}% Secured
+                    </div>
+                    <div class="progress-bar bg-success-subtle text-success-emphasis fw-bold" role="progressbar"
+                        [style.width.%]="improvementScope.recoverable">
+                        +{{ improvementScope.recoverable }}% Achievable
+                    </div>
+                    <div class="progress-bar bg-light text-body-secondary" role="progressbar"
+                        [style.width.%]="improvementScope.lost - improvementScope.recoverable">
+                        Gap
+                    </div>
+                </div>
+                <div class="mt-4 row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled small text-muted">
+                            <li class="mb-2"><span class="badge bg-success me-2">Green</span> <strong>Secured:</strong>
+                                Concepts currently mastered.</li>
+                            <li class="mb-2"><span class="badge bg-success-subtle text-success-emphasis me-2">Light
+                                    Green</span> <strong>Achievable:</strong> Marks lost to silly mistakes. Easily
+                                recoverable with focus.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="fw-bold text-primary">Potential Score Range</div>
+                        <div class="display-6 fw-bold">{{ prediction.current }}% - {{ prediction.potential }}%</div>
+                        <div class="small text-muted">If "Achievable" mistakes are fixed.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION G: Next Steps (Actionable) -->
+        <section class="bg-primary-subtle rounded-4 p-5">
+            <h5 class="fw-bold text-primary mb-4"><i class="bi bi-stars me-2"></i>Suggested Next Steps (Parent + Child)
+            </h5>
+
+            <div *ngIf="loadingNextSteps" class="text-center py-4">
+                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                <span class="ms-2 text-primary fw-medium small">Generating personalized AI recommendations...</span>
+            </div>
+
+            <div class="row" *ngIf="!loadingNextSteps">
+                <div class="col-md-8">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent d-flex align-items-start gap-3 border-secondary-subtle ps-0"
+                            *ngFor="let step of nextSteps; let i = index">
+                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
+                                style="width: 32px; height: 32px; font-weight: bold;">{{ i + 1 }}</div>
+                            <div class="pt-1">{{ step }}</div>
+                        </li>
+                    </ul>
+                </div>
+                <div
+                    class="col-md-4 d-flex align-items-center justify-content-center border-start border-secondary-subtle">
+                    <div class="text-center">
+                        <i class="bi bi-check-circle-fill text-primary display-4 mb-3 d-block"></i>
+                        <p class="mb-0 fw-medium text-primary-emphasis">Small steps lead to big progress!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>

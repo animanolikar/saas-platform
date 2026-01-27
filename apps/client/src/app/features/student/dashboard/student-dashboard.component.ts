@@ -10,7 +10,8 @@ import { RouterModule } from '@angular/router';
     templateUrl: './student-dashboard.component.html',
 })
 export class StudentDashboardComponent implements OnInit {
-    exams: any[] = [];
+    availableExams: any[] = [];
+    attemptedExams: any[] = [];
     loading = false;
 
     constructor(
@@ -27,7 +28,13 @@ export class StudentDashboardComponent implements OnInit {
         // Load Available Exams
         this.examsService.getAvailableExams().subscribe({
             next: (data) => {
-                this.exams = data;
+                this.availableExams = data.filter((ex: any) =>
+                    !ex.attempts?.length || ex.attempts[0].status === 'IN_PROGRESS'
+                );
+                this.attemptedExams = data.filter((ex: any) =>
+                    ex.attempts?.length && ['SUBMITTED', 'EVALUATED'].includes(ex.attempts[0].status)
+                );
+
                 this.loading = false;
                 this.startTimer();
                 this.cdr.detectChanges();

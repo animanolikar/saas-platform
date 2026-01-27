@@ -28,7 +28,7 @@ export class AiService {
     ): Promise<string> {
         if (!this.model) {
             this.logger.warn('Skipping AI generation: No Model/API Key available.');
-            return '';
+            return `(AI Insight unavailable - No Model) This question tests your fundamental understanding. Review the core concepts to identify the correct approach.`;
         }
 
         this.logger.log(`🤖 Generating AI Insight (Gemini 1.5 Pro)...`);
@@ -64,7 +64,8 @@ Instructions:
             return text;
         } catch (error: any) {
             this.logger.error(`Failed to generate AI insight: ${error.message}`, error.stack);
-            return '';
+            // Fallback for demo/robustness
+            return `(AI Insight unavailable, using fallback) The correct answer is determined by the specific rules of the question topic. Review the concept definitions to clarify the distinction between the options.`;
         }
     }
 

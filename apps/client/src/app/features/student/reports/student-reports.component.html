@@ -22,6 +22,9 @@
                 class="btn btn-outline-dark no-print" (click)="printReport()">
                 <i class="bi bi-printer me-2"></i> Print PDF
             </button>
+            <button class="btn btn-outline-info no-print" (click)="openExplainer()">
+                <i class="bi bi-question-circle me-2"></i>Guide
+            </button>
         </div>
     </div>
 
@@ -44,11 +47,12 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card border-0 shadow-sm h-100 cursor-pointer hover-card" (click)="openExamHistory()">
                     <div class="card-body">
                         <small class="text-muted fw-bold text-uppercase">Exams Taken</small>
                         <div class="h3 fw-bold mb-0 mt-2">{{ summaryData.totalExams }}</div>
-                        <small class="text-muted">Total history</small>
+                        <small class="text-primary text-decoration-none" style="font-size: 0.8rem;">View List <i
+                                class="bi bi-arrow-right"></i></small>
                     </div>
                 </div>
             </div>
@@ -177,6 +181,106 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal fade show" tabindex="-1" *ngIf="historyModalVisible"
+    style="display: block; background: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">Exam History</h5>
+                <button type="button" class="btn-close" (click)="closeExamHistory()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="list-group list-group-flush" style="max-height: 60vh; overflow-y: auto;">
+                    <div *ngIf="examHistory.length === 0" class="p-4 text-center text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading
+                        history...
+                    </div>
+
+                    <a [routerLink]="['/student/exam-result', item.id]"
+                        class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
+                        *ngFor="let item of examHistory" (click)="closeExamHistory()">
+                        <div>
+                            <h6 class="mb-1 fw-bold text-dark">{{ item.exam?.title || 'Untitled Exam' }}</h6>
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar me-1"></i> {{ item.submittedAt | date:'medium' }}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" [class.text-success]="item.result?.percentage >= 40"
+                                [class.text-danger]="item.result?.percentage < 40">
+                                {{ item.result?.percentage | number:'1.0-1' }}%
+                            </div>
+                            <span class="badge"
+                                [class.bg-success]="item.status === 'EVALUATED' || item.status === 'SUBMITTED'"
+                                [class.bg-secondary]="item.status === 'IN_PROGRESS'">
+                                {{ (item.status === 'SUBMITTED' || item.status === 'EVALUATED') ? 'COMPLETED' :
+                                item.status }}
+                            </span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light" (click)="closeExamHistory()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Explainer Modal -->
+<div class="modal fade show" tabindex="-1" *ngIf="explainerVisible"
+    style="display: block; background: rgba(0,0,0,0.5); z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="bi bi-info-circle text-primary me-2"></i>How to Read This
+                    Report</h5>
+                <button type="button" class="btn-close" (click)="closeExplainer()"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary">📊 Dashboard Cards</h6>
+                        <ul class="small text-muted mb-0">
+                            <li><strong>Avg Score:</strong> Your average percentage across all exams.</li>
+                            <li><strong>Exams Taken:</strong> Total number of exams you have completed.</li>
+                            <li><strong>Consistency:</strong> Measures how stable your scores are (High, Medium, Low).
+                                High consistency means predictable performance.</li>
+                            <li><strong>Strongest:</strong> The subject where you score the highest on average.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-primary">📈 Performance History</h6>
+                        <p class="small text-muted">A line graph showing your score trend over time.
+                            <br><strong>X-Axis:</strong> Exam Date
+                            <br><strong>Y-Axis:</strong> Score Percentage
+                        </p>
+
+                        <h6 class="fw-bold text-primary mt-3">🎯 Topic Analysis</h6>
+                        <p class="small text-muted mb-0">A radar chart showing your mastery in different subjects. The
+                            further out the point, the better you are at that topic.</p>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-info border-0 d-flex gap-3 align-items-center mb-0">
+                            <i class="bi bi-stars fs-3"></i>
+                            <div>
+                                <strong>AI Analysis Tab</strong>
+                                <div class="small">Click the "AI Analysis" tab to generate a detailed, 8-10 page "Zero
+                                    to Hero" report that predicts your future scores and gives a custom study plan.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-primary" (click)="closeExplainer()">Got it!</button>
             </div>
         </div>
     </div>

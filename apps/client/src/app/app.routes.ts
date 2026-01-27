@@ -31,13 +31,15 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./layout/student-layout/student-layout.component').then(m => m.StudentLayoutComponent),
         canActivate: [authGuard], // Reusing AuthGuard for now, technically checks for token
         children: [
+            { path: 'overview', loadComponent: () => import('./features/student/overview/student-overview.component').then(m => m.StudentOverviewComponent) },
             { path: 'dashboard', loadComponent: () => import('./features/student/dashboard/student-dashboard.component').then(m => m.StudentDashboardComponent) },
             { path: 'results', loadComponent: () => import('./features/student/result-list/result-list.component').then(m => m.StudentResultsListComponent) },
             { path: 'reports', loadComponent: () => import('./features/student/reports/student-reports.component').then(m => m.StudentReportsComponent) },
             { path: 'profile', loadComponent: () => import('./features/student/profile/student-profile.component').then(m => m.StudentProfileComponent) },
             { path: 'exam/:id/start', loadComponent: () => import('./features/student/exam-runner/exam-runner.component').then(m => m.ExamRunnerComponent) },
             { path: 'exam/:attemptId/result', loadComponent: () => import('./features/student/exam-result/exam-result.component').then(m => m.StudentExamResultComponent) },
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+            { path: 'parent-report', loadComponent: () => import('./features/student/parent-report/parent-report.component').then(m => m.ParentReportComponent) },
+            { path: '', redirectTo: 'overview', pathMatch: 'full' },
         ]
     },
     { path: '', redirectTo: 'admin', pathMatch: 'full' },

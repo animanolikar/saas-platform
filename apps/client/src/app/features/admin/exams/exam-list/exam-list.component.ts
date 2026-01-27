@@ -37,9 +37,12 @@ export class ExamListComponent implements OnInit, AfterViewInit {
         settings: {
             defaultPositiveMarks: 1,
             defaultNegativeMarks: 0,
-            isProctoringEnabled: false
+            isProctoringEnabled: false,
+            maxAttempts: 1,
+            allowResume: false
         }
     };
+    tempDurationMinutes = 60; // Helper for UI input
 
     // Assignment Modal
     assignModalInstance: any;
@@ -110,9 +113,12 @@ export class ExamListComponent implements OnInit, AfterViewInit {
             settings: {
                 defaultPositiveMarks: 1,
                 defaultNegativeMarks: 0,
-                isProctoringEnabled: false
+                isProctoringEnabled: false,
+                maxAttempts: 1,
+                allowResume: false
             }
         };
+        this.tempDurationMinutes = 60;
         this.showModal();
     }
 
@@ -124,8 +130,15 @@ export class ExamListComponent implements OnInit, AfterViewInit {
             description: exam.description,
             durationSeconds: exam.durationSeconds,
             passPercentage: exam.passPercentage,
-            settings: exam.settings || { defaultPositiveMarks: 1, defaultNegativeMarks: 0, isProctoringEnabled: false }
+            settings: {
+                defaultPositiveMarks: exam.settings?.defaultPositiveMarks || 1,
+                defaultNegativeMarks: exam.settings?.defaultNegativeMarks || 0,
+                isProctoringEnabled: exam.settings?.isProctoringEnabled || false,
+                maxAttempts: exam.settings?.maxAttempts || 0,
+                allowResume: exam.settings?.allowResume || false
+            }
         };
+        this.tempDurationMinutes = Math.floor(exam.durationSeconds / 60);
         this.showModal();
     }
 
@@ -151,6 +164,9 @@ export class ExamListComponent implements OnInit, AfterViewInit {
             alert('Please enter an exam title.');
             return;
         }
+
+        // Convert minutes to seconds
+        this.newExam.durationSeconds = this.tempDurationMinutes * 60;
 
         const request = this.isEditing && this.currentExamId
             ? this.examsService.updateExam(this.currentExamId, this.newExam)

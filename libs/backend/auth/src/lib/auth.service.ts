@@ -108,7 +108,9 @@ export class AuthService {
         const payload = { sub: user.id, type: 'reset' };
         const token = this.jwtService.sign(payload, { expiresIn: '15m' });
 
-        const resetLink = `http://localhost:4200/reset-password?token=${token}`;
+        const frontendUrl = process.env['FRONTEND_URL'] ||
+            (process.env['NODE_ENV'] === 'production' ? 'https://brahmand.co' : 'http://localhost:4200');
+        const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
         await this.emailService.sendPasswordReset(user.email, user.firstName || 'User', resetLink);
 

@@ -1,0 +1,151 @@
+<div class="container p-5">
+    <!-- Header -->
+    <div class="mb-5 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold text-body-emphasis">Overview</h2>
+            <p class="text-body-secondary mb-0">Welcome back, {{ user?.firstName || 'Student' }}! Here is your progress
+                summary.</p>
+        </div>
+        <div class="d-none d-md-block">
+            <button class="btn btn-primary rounded-pill px-4" routerLink="/student/dashboard">
+                <i class="bi bi-play-fill me-1"></i> Go to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <!-- Total Assigned -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary-subtle bg-opacity-10">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 text-primary">
+                        <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                            <i class="bi bi-journal-text fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0">Assigned</h6>
+                    </div>
+                    <h2 class="fw-bold mb-0">{{ loading ? '-' : stats.total }}</h2>
+                    <small class="text-muted">Total Exams</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-success-subtle bg-opacity-10">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 text-success">
+                        <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                            <i class="bi bi-check-lg fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0">Completed</h6>
+                    </div>
+                    <h2 class="fw-bold mb-0">{{ loading ? '-' : stats.completed }}</h2>
+                    <small class="text-muted">Exams Finished</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-warning-subtle bg-opacity-10">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 text-warning-emphasis">
+                        <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0">Pending</h6>
+                    </div>
+                    <h2 class="fw-bold mb-0">{{ loading ? '-' : stats.pending }}</h2>
+                    <small class="text-muted">To Do / In Progress</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Avg Score -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-info-subtle bg-opacity-10">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 text-info-emphasis">
+                        <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                            <i class="bi bi-trophy fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0">Avg. Score</h6>
+                    </div>
+                    <h2 class="fw-bold mb-0">{{ loading ? '-' : stats.averageScore }}%</h2>
+                    <small class="text-muted">Performance</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <h5 class="fw-bold text-body-secondary mb-4">Recent Activity</h5>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="list-group list-group-flush">
+            <div *ngIf="loading" class="p-5 text-center text-muted">Loading activity...</div>
+            <div *ngIf="!loading && recentExams.length === 0" class="p-5 text-center text-muted">
+                <i class="bi bi-inbox fs-1 opacity-25 d-block mb-3"></i>
+                No activity yet. Go to <a routerLink="/student/dashboard">Dashboard</a> to start an exam.
+            </div>
+
+            <div *ngFor="let ex of recentExams"
+                class="list-group-item p-4 d-flex align-items-center gap-3 border-bottom-0">
+                <div class="bg-light rounded-circle p-3 d-flex align-items-center justify-content-center text-muted"
+                    style="width: 50px; height: 50px;">
+                    <i class="bi bi-file-earmark-text fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">{{ ex.title }}</h6>
+                    <small class="text-muted d-block">{{ ex.description || 'No description' }}</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge rounded-pill mb-2"
+                        [class.bg-success-subtle]="['SUBMITTED', 'EVALUATED'].includes(ex.status)"
+                        [class.text-success-emphasis]="['SUBMITTED', 'EVALUATED'].includes(ex.status)"
+                        [class.bg-warning-subtle]="ex.status === 'IN_PROGRESS'"
+                        [class.text-warning-emphasis]="ex.status === 'IN_PROGRESS'"
+                        [class.bg-secondary-subtle]="ex.status === 'Pending'"
+                        [class.text-secondary-emphasis]="ex.status === 'Pending'">
+                        {{ ex.status.replace('_', ' ') }}
+                    </span>
+                    <div class="small text-muted">{{ ex.lastActivity | date:'mediumDate' }}</div>
+                    <div *ngIf="['SUBMITTED', 'EVALUATED'].includes(ex.status)" class="mt-1">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"
+                            *ngIf="ex.attempts?.[0]?.result?.percentage !== undefined">
+                            Score: {{ ex.attempts[0].result.percentage | number:'1.0-0' }}%
+                        </span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"
+                            *ngIf="ex.attempts?.[0]?.result?.percentage === undefined && ex.attempts?.[0]?.totalScore !== undefined">
+                            Score: {{ ex.attempts[0].totalScore }}
+                        </span>
+                    </div>
+                </div>
+                <!-- Start Button for Pending -->
+                <!-- Start Button for Pending (Safety: Ensure no attempts exist) -->
+                <button class="btn btn-sm btn-outline-primary ms-3" [routerLink]="['/student/exam', ex.id, 'start']"
+                    *ngIf="ex.status === 'Pending' && (!ex.attempts || ex.attempts.length === 0)">
+                    <i class="bi bi-play-fill"></i> Start
+                </button>
+
+                <!-- Resume Button (If Allowed) -->
+                <button class="btn btn-sm btn-outline-warning ms-3" [routerLink]="['/student/exam', ex.id, 'start']"
+                    *ngIf="ex.status === 'IN_PROGRESS' && ex.settings && ex.settings.allowResume">
+                    <i class="bi bi-arrow-right"></i> Resume
+                </button>
+
+                <!-- Strict Mode Badge (If Resume Disabled) -->
+                <span class="badge bg-secondary p-2 ms-3"
+                    *ngIf="ex.status === 'IN_PROGRESS' && (!ex.settings || !ex.settings.allowResume)">
+                    <i class="bi bi-lock-fill"></i> No Resume
+                </span>
+                <button class="btn btn-sm btn-outline-success ms-3"
+                    [routerLink]="['/student/exam', ex.attempts?.[0]?.id, 'result']"
+                    *ngIf="['SUBMITTED', 'EVALUATED'].includes(ex.status)">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -43,6 +43,12 @@ export class ReportsController {
         return this.reportsService.getDashboardSummary(targetId);
     }
 
+    @Get('student/parent-recommendations')
+    async getParentRecommendations(@Req() req: any, @Query('userId') userId?: string) {
+        const targetId = this.resolveUserId(req, userId);
+        return this.reportsService.getParentRecommendations(targetId);
+    }
+
     @Get('student/attempt/:attemptId/analyze')
     async analyzeAttempt(@Req() req: any, @Param('attemptId') attemptId: string, @Query('force') force?: string) {
         // We might want to verify user owns the attempt here.

@@ -1,6 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef, ViewEncapsulation, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReportsService } from '../../../core/services/reports.service';
+import { ExamsService } from '../../../core/services/exams.service';
+import { RouterModule } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { marked } from 'marked';
@@ -9,7 +11,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 @Component({
   selector: 'app-student-reports',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, RouterModule],
   templateUrl: './student-reports.component.html',
   encapsulation: ViewEncapsulation.None,
   styles: [`
@@ -170,8 +172,16 @@ export class StudentReportsComponent implements OnInit {
       tooltip: { mode: 'index', intersect: false }
     },
     scales: {
-      y: { min: 0, max: 100, grid: { display: true } },
-      x: { grid: { display: false } }
+      y: {
+        min: 0,
+        max: 100,
+        grid: { display: true },
+        title: { display: true, text: 'Score (%)', font: { weight: 'bold' } }
+      },
+      x: {
+        grid: { display: false },
+        title: { display: true, text: 'Exam Date', font: { weight: 'bold' } }
+      }
     }
   };
 
@@ -199,11 +209,41 @@ export class StudentReportsComponent implements OnInit {
   reportHistory: any[] = [];
   selectedReportId: string | null = null;
 
+  // History Modal
+  historyModalVisible = false;
+  examHistory: any[] = [];
+
+  // Explainer Modal
+  explainerVisible = false;
+
   constructor(
     private reportsService: ReportsService,
+    private examsService: ExamsService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef
   ) { }
+
+  openExplainer() {
+    this.explainerVisible = true;
+  }
+
+  closeExplainer() {
+    this.explainerVisible = false;
+  }
+
+  openExamHistory() {
+    this.historyModalVisible = true;
+    if (this.examHistory.length === 0) {
+      this.examsService.getHistory().subscribe(history => {
+        this.examHistory = history;
+        this.cdr.markForCheck();
+      });
+    }
+  }
+
+  closeExamHistory() {
+    this.historyModalVisible = false;
+  }
 
   getCurrentUserId(): string | null {
     if (this.userId) return this.userId;
@@ -263,8 +303,62 @@ export class StudentReportsComponent implements OnInit {
     });
 
     this.reportsService.getPerformanceTrend(this.userId).subscribe(trend => {
-      this.performanceData.labels = trend.map(t => new Date(t.date).toLocaleDateString());
-      this.performanceData.datasets[0].data = trend.map(t => t.percentage);
+      const labels = trend.map(t => new Date(t.date).toLocaleDateString());
+
+      // 1. Base Dataset: Overall Score
+      const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
+        {
+          data: trend.map(t => t.percentage),
+          label: 'Overall Score (%)',
+          fill: false,
+          tension: 0.4,
+          borderColor: '#4e73df',
+          backgroundColor: '#4e73df',
+          pointBackgroundColor: '#4e73df',
+          borderWidth: 3
+        }
+      ];
+
+      // 2. Extract Unique Tags across all exams
+      const allTags = new Set<string>();
+      trend.forEach(t => {
+        if (t.tagScores) {
+          t.tagScores.forEach((ts: any) => allTags.add(ts.tag));
+        }
+      });
+
+      // 3. Create Dataset for each Tag
+      const colors = ['#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#6610f2', '#fd7e14', '#20c9a6'];
+      let colorIndex = 0;
+
+      allTags.forEach(tag => {
+        const data = trend.map(t => {
+          const tagScore = t.tagScores?.find((ts: any) => ts.tag === tag);
+          return tagScore ? tagScore.percentage : null; // Use null for gaps if tag wasn't in that exam
+        });
+
+        // Only add line if it has some data
+        if (data.some(d => d !== null)) {
+          datasets.push({
+            data: data as number[],
+            label: tag,
+            fill: false,
+            tension: 0.4,
+            borderColor: colors[colorIndex % colors.length],
+            backgroundColor: colors[colorIndex % colors.length],
+            pointBackgroundColor: colors[colorIndex % colors.length],
+            borderDash: [5, 5], // Dashed line for tags to differentiate from main
+            borderWidth: 2
+          });
+          colorIndex++;
+        }
+      });
+
+      this.performanceData = { labels, datasets };
+
+      // Update Legend to be visible now that we have multiple lines
+      this.performanceOptions.plugins!.legend!.display = true;
+
       this.cdr.markForCheck();
     });
 
