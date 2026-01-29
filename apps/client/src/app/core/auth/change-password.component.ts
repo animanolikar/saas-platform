@@ -38,7 +38,7 @@ export class ChangePasswordComponent {
 
         // Let's rely on Interceptor if it exists. Based on previous file reads, there is an interceptor.
 
-        this.http.post<{ message: string }>('http://localhost:3000/api/auth/change-password', {
+        this.http.post<{ message: string }>('http://brahmand.co/api/auth/change-password', {
             newCode: this.password
         })
             .subscribe({

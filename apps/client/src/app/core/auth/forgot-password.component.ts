@@ -25,7 +25,10 @@ export class ForgotPasswordComponent {
         this.message = '';
         this.error = '';
 
-        this.http.post<{ message: string }>('http://localhost:3000/api/auth/forgot-password', { email: this.email })
+        // this.http.post<{ message: string }>('http://localhost:3000/api/auth/forgot-password', { email: this.email })
+        this.http.post<{ message: string }>('http://brahmand.co/api/auth/forgot-password', { email: this.email })
+
+
             .subscribe({
                 next: (res) => {
                     this.loading = false;
