@@ -91,7 +91,7 @@ export class EmailService {
 
                 <!-- CTA -->
                 <div align="center" style="margin-top: 30px;">
-                    <a href="http://localhost:4200/login" style="display: inline-block; padding: 14px 32px; background-color: #E10600; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.3s ease;">Login to Dashboard</a>
+                    <a href="http://brahmand.co/login" style="display: inline-block; padding: 14px 32px; background-color: #E10600; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.3s ease;">Login to Dashboard</a>
                 </div>
             </td>
         </tr>
