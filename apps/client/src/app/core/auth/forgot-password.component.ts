@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-forgot-password',
@@ -16,7 +18,7 @@ export class ForgotPasswordComponent {
     message = '';
     error = '';
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient, private cdr: ChangeDetectorRef) { }
 
     onSubmit() {
         if (!this.email) return;
@@ -25,20 +27,18 @@ export class ForgotPasswordComponent {
         this.message = '';
         this.error = '';
 
-        // this.http.post<{ message: string }>('http://localhost:3000/api/auth/forgot-password', { email: this.email })
-        this.http.post<{ message: string }>('http://brahmand.co/api/auth/forgot-password', { email: this.email })
-
-
+        this.http.post<{ message: string }>(`${environment.apiUrl}/auth/forgot-password`, { email: this.email })
+            .pipe(finalize(() => {
+                this.loading = false;
+                this.cdr.detectChanges();
+            }))
             .subscribe({
                 next: (res) => {
-                    this.loading = false;
-                    this.message = res.message;
+                    this.message = 'Password reset link sent successfully! Please check your email.';
                 },
                 error: (err) => {
-                    this.loading = false;
-                    // Ideally check err.status, but for security usually we shouldn't reveal much.
-                    // API returns success even if not found usually, but here implemented otherwise?
-                    // AuthService returns success mostly.
+                    // For security, even if error, we often don't want to show it if it reveals user existence, 
+                    // but here we will show a generic error or the backend message if safe.
                     this.error = 'An error occurred. Please try again.';
                 }
             });

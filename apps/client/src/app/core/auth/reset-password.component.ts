@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { finalize } from 'rxjs/operators';
 
 @Component({
     selector: 'app-reset-password',
@@ -20,7 +21,8 @@ export class ResetPasswordComponent implements OnInit {
 
     constructor(
         private route: ActivatedRoute,
-        private http: HttpClient
+        private http: HttpClient,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -41,13 +43,15 @@ export class ResetPasswordComponent implements OnInit {
             token: this.token,
             newCode: this.password
         })
+            .pipe(finalize(() => {
+                this.loading = false;
+                this.cdr.detectChanges();
+            }))
             .subscribe({
                 next: (res) => {
-                    this.loading = false;
                     this.success = 'Password has been reset successfully!';
                 },
                 error: (err) => {
-                    this.loading = false;
                     this.error = err.error?.message || 'Failed to reset password. Link may be expired.';
                 }
             });
