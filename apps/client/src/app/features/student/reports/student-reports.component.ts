@@ -23,8 +23,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         overflow: visible !important;
       }
       
-      /* 2. Reset Parent Layouts (Essential for pagination) */
-      /* We must NOT use display:none on parents, or the child report vanishes */
+      /* 2. Reset Parent Layouts */
       app-root, app-student-layout, .main-content, .overflow-auto {
         display: block !important;
         height: auto !important;
@@ -32,9 +31,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         position: static !important;
       }
 
-      /* 3. Hide UI Elements (Sidebar, Header, Navigation) */
-      /* Use specific selectors relative to the verified DOM structure */
-      app-student-layout > div.d-flex > div:first-child { /* Sidebar Wrapper */
+      /* 3. Hide UI Elements */
+      app-student-layout > div.d-flex > div:first-child { 
         display: none !important; 
       }
       header, .navbar, .no-print {
@@ -55,7 +53,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       }
       
       /* 5. Content Styling */
-      /* Ensure text is black and breaks correctly */
       h1, h2, h3, p, li {
         color: black !important;
         page-break-inside: auto !important;
@@ -100,7 +97,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         color: #666;
       }
 
-      /* Add padding to body content to prevent overlap */
       #printable-report {
         padding-top: 100px !important;
         padding-bottom: 40px !important;
@@ -111,7 +107,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
       }
     }
     
-    /* Control browser print headers/footers/margins */
     @page {
       margin: 1.5cm;
       size: auto;
@@ -125,7 +120,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     .markdown-content strong { color: #2c3e50; font-weight: 700; }
     .markdown-content blockquote { border-left: 4px solid #1cc88a; padding-left: 1rem; font-style: italic; color: #555; background: #f8f9fa; padding: 1rem; border-radius: 4px; }
     
-    /* Table Styles */
     .markdown-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
     .markdown-content th { background-color: #f8f9fa; color: #4e73df; font-weight: 600; padding: 12px; border: 1px solid #dee2e6; text-align: left; }
     .markdown-content td { padding: 12px; border: 1px solid #dee2e6; color: #2d3748; }
@@ -142,7 +136,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   `]
 })
 export class StudentReportsComponent implements OnInit {
-  @Input() userId?: string; // Allow passing a specific user ID (for Admin)
+  @Input() userId?: string;
 
   activeTab: 'overview' | 'detailed' = 'overview';
   loading = false;
@@ -231,8 +225,11 @@ export class StudentReportsComponent implements OnInit {
     this.explainerVisible = false;
   }
 
-  openExamHistory() {
+  openExamHistory(mode: 'view' | 'select' = 'view') {
     this.historyModalVisible = true;
+    this.isSelectionMode = mode === 'select';
+    this.selectedAttempts.clear(); // Reset selection on open
+
     if (this.examHistory.length === 0) {
       this.examsService.getHistory().subscribe(history => {
         this.examHistory = history;
@@ -243,6 +240,7 @@ export class StudentReportsComponent implements OnInit {
 
   closeExamHistory() {
     this.historyModalVisible = false;
+    this.isSelectionMode = false;
   }
 
   getCurrentUserId(): string | null {
@@ -259,7 +257,6 @@ export class StudentReportsComponent implements OnInit {
 
   ngOnInit() {
     this.loadOverviewData();
-    // Load history instead of local cache
     this.loadHistory();
   }
 
@@ -372,7 +369,50 @@ export class StudentReportsComponent implements OnInit {
       this.loading = false;
       this.cdr.markForCheck();
     });
+    this.loading = false;
+    this.cdr.markForCheck();
   }
+
+  // --- Custom Analysis Logic ---
+  isSelectionMode = false;
+  selectedAttempts = new Set<string>();
+  customReportGenerating = false;
+
+  toggleAttemptSelection(id: string) {
+    if (this.selectedAttempts.has(id)) {
+      this.selectedAttempts.delete(id);
+    } else {
+      this.selectedAttempts.add(id);
+    }
+    this.cdr.markForCheck();
+  }
+
+  generateCustomReport() {
+    if (this.selectedAttempts.size === 0) return;
+
+    this.closeExamHistory();
+    this.activeTab = 'detailed';
+    this.reportLoading = true;
+    this.selectedReportId = null; // Clear selection as we are generating new
+    this.cdr.markForCheck();
+
+    const attempts = Array.from(this.selectedAttempts);
+    this.reportsService.getCustomAnalysis(attempts, this.userId).subscribe({
+      next: (res) => {
+        this.setReportContent(res.content);
+        this.reportLoading = false;
+        this.selectedAttempts.clear();
+        this.loadHistory();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.reportLoading = false;
+        this.reportContent = 'Failed to generate custom analysis. Please try again.';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+  // -----------------------------
 
   generateReport(force = false) {
     this.activeTab = 'detailed';

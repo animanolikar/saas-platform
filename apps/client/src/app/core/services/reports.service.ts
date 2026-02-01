@@ -56,4 +56,10 @@ export class ReportsService {
         if (userId) params.userId = userId;
         return this.http.get<{ recommendations: string[] }>(`${this.apiUrl}/student/parent-recommendations`, { params });
     }
+
+    getCustomAnalysis(attemptIds: string[], userId?: string): Observable<{ content: string }> {
+        const body: any = { attemptIds };
+        if (userId) body.userId = userId;
+        return this.http.post<{ content: string }>(`${this.apiUrl}/student/custom-analysis`, body);
+    }
 }

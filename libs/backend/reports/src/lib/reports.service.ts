@@ -44,12 +44,16 @@ export class ReportsService {
             }
         });
 
+        return this.calculateTrendMetrics(attempts);
+    }
+
+    private calculateTrendMetrics(attempts: any[]) {
         let cumulativeObtained = 0;
         let cumulativeTotal = 0;
 
         const detailedTrends = attempts.map((a, index) => {
             // Guard against empty questions or zero marks
-            const totalMarks = a.exam?.questions?.reduce((sum, q) => sum + (q.marks || 1), 0) || 100; // Default to 100 if completely missing
+            const totalMarks = a.exam?.questions?.reduce((sum: number, q: any) => sum + (q.marks || 1), 0) || 100; // Default to 100 if completely missing
             const obtainedScore = a.totalScore || 0;
 
             cumulativeObtained += obtainedScore;
@@ -61,7 +65,7 @@ export class ReportsService {
             let gainLoss = 'N/A';
             if (index > 0) {
                 const prevAttempt = attempts[index - 1];
-                const prevTotal = prevAttempt.exam?.questions?.reduce((sum, q) => sum + (q.marks || 1), 0) || 100;
+                const prevTotal = prevAttempt.exam?.questions?.reduce((sum: number, q: any) => sum + (q.marks || 1), 0) || 100;
                 const prevScore = prevAttempt.totalScore || 0;
                 const prevPercentage = prevTotal > 0 ? (prevScore / prevTotal) * 100 : 0;
 
@@ -73,25 +77,25 @@ export class ReportsService {
             const tagStats: Record<string, { obtained: number; total: number }> = {};
 
             // 1. Calculate Total Marks per Tag (from Exam Questions)
-            a.exam?.questions?.forEach(q => {
-                let tags = q.question.tags.map(t => t.tag.name);
+            a.exam?.questions?.forEach((q: any) => {
+                let tags = q.question.tags.map((t: any) => t.tag.name);
                 if (tags.length === 0) tags = ['General Knowledge'];
 
                 const marks = q.marks || 1;
-                tags.forEach(tag => {
+                tags.forEach((tag: string) => {
                     if (!tagStats[tag]) tagStats[tag] = { obtained: 0, total: 0 };
                     tagStats[tag].total += marks;
                 });
             });
 
             // 2. Calculate Obtained Marks per Tag (from Answers)
-            a.answers?.forEach(ans => {
-                let tags = ans.question.tags.map(t => t.tag.name);
+            a.answers?.forEach((ans: any) => {
+                let tags = ans.question.tags.map((t: any) => t.tag.name);
                 if (tags.length === 0) tags = ['General Knowledge'];
 
                 const marksAwarded = ans.marksAwarded || 0; // Use actual awarded marks
                 if (marksAwarded > 0) {
-                    tags.forEach(tag => {
+                    tags.forEach((tag: string) => {
                         if (tagStats[tag]) tagStats[tag].obtained += marksAwarded;
                     });
                 }
@@ -103,6 +107,7 @@ export class ReportsService {
             }));
 
             return {
+                id: a.id, // Ensure ID is available
                 examTitle: a.exam?.title || 'Unknown Exam',
                 date: a.startedAt,
                 score: obtainedScore,
@@ -121,6 +126,105 @@ export class ReportsService {
                 overallPercentage: cumulativeTotal > 0 ? Math.round((cumulativeObtained / cumulativeTotal) * 100) : 0
             }
         };
+    }
+
+    async getCustomCumulativeReport(userId: string, attemptIds: string[]) {
+        if (!attemptIds || attemptIds.length === 0) throw new Error('No exams selected for analysis.');
+
+        // Fetch selected attempts
+        const attempts = await this.prisma.examAttempt.findMany({
+            where: {
+                id: { in: attemptIds },
+                userId, // Ensure the user owns these attempts
+                status: { in: ['SUBMITTED', 'EVALUATED'] }
+            },
+            orderBy: { startedAt: 'asc' },
+            include: {
+                exam: {
+                    include: {
+                        questions: {
+                            include: {
+                                question: {
+                                    include: { tags: { include: { tag: true } } }
+                                }
+                            }
+                        }
+                    }
+                },
+                answers: {
+                    include: {
+                        question: {
+                            include: { tags: { include: { tag: true } } }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (attempts.length === 0) throw new Error('No valid submitted exams found from selection.');
+
+        // Re-use logic to calculate metrics for these specifically selected exams
+        const trendData = this.calculateTrendMetrics(attempts);
+        const trends = trendData.trends;
+        const cumulative = trendData.cumulative;
+
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('User not found');
+
+        // Consistency on this subset
+        const scores = trends.map(t => t.percentage);
+        const mean = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+        const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (scores.length || 1);
+        const stdDev = Math.sqrt(variance);
+
+        // Construct Prompt
+        const prompt = `
+        Role: Expert Academic Strategist & Data Analyst.
+        Student: ${user.firstName}
+        Context: The student has selected ${attempts.length} specific exams for a focused "Deep Dive" analysis.
+        
+        Selected Exams Data:
+        - List: ${JSON.stringify(trends.map(t => ({ title: t.examTitle, score: t.percentage + '%' })))}
+        - Cumulative Accuracy on Selection: ${cumulative.overallPercentage}%
+        
+        Values:
+        - Consistency (Std Dev): ${stdDev.toFixed(1)} (Lower is better)
+        - Trend Trajectory: ${trends[0].percentage}% -> ... -> ${trends[trends.length - 1].percentage}%
+
+        Task: Write a FOCUSED analysis on why these specific performances varied or what pattern connects them.
+        
+        Structure:
+        # 🔍 Selected Exams Insight
+        - Analyze the connection between these ${attempts.length} exams.
+        
+        # 📊 Performance Breakdown
+        - Highlight the best and worst among the selection.
+        
+        # 🚀 Strategic Recommendations
+        - Based *only* on this dataset, what should be the immediate next step?
+        
+        # 🏁 Verdict
+        - One line punchy summary.
+        
+        Format: Markdown.
+        `;
+
+        const reportContent = await this.aiService.generateReportMarkdown(prompt);
+
+        // Save Report
+        await this.prisma.studentAnalyticsReport.create({
+            data: {
+                userId: user.id,
+                content: reportContent,
+                metadata: {
+                    type: 'CUSTOM_SELECTION',
+                    selectedAttemptIds: attemptIds,
+                    generatedAt: new Date()
+                }
+            }
+        });
+
+        return { content: reportContent };
     }
 
     async getTopicAnalysis(userId: string) {

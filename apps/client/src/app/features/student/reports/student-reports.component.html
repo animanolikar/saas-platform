@@ -128,10 +128,15 @@
                         <i class="bi bi-chevron-right small"></i>
                     </button>
 
-                    <button *ngIf="!reportLoading"
-                        class="list-group-item list-group-item-action text-primary fw-bold text-center py-3"
+                </div>
+                <div class="p-3 border-top bg-light">
+                    <button *ngIf="!reportLoading" class="btn btn-outline-primary w-100 fw-bold mb-2"
                         (click)="generateReport(true)">
                         <i class="bi bi-plus-circle me-2"></i> Generate New
+                    </button>
+                    <button *ngIf="!reportLoading" class="btn btn-outline-info w-100 fw-bold"
+                        (click)="openExamHistory('select')">
+                        <i class="bi bi-list-check me-2"></i> Analyze Specific Exams
                     </button>
                 </div>
             </div>
@@ -202,32 +207,53 @@
                         history...
                     </div>
 
-                    <a [routerLink]="['/student/exam-result', item.id]"
-                        class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
-                        *ngFor="let item of examHistory" (click)="closeExamHistory()">
-                        <div>
-                            <h6 class="mb-1 fw-bold text-dark">{{ item.exam?.title || 'Untitled Exam' }}</h6>
-                            <div class="small text-muted">
-                                <i class="bi bi-calendar me-1"></i> {{ item.submittedAt | date:'medium' }}
-                            </div>
+                    <div class="list-group-item list-group-item-action p-3 d-flex align-items-center gap-3"
+                        *ngFor="let item of examHistory" (click)="!isSelectionMode && closeExamHistory()"
+                        [class.cursor-pointer]="!isSelectionMode">
+
+                        <!-- Checkbox for Selection Mode -->
+                        <div *ngIf="isSelectionMode" (click)="$event.stopPropagation()">
+                            <input type="checkbox" class="form-check-input" [checked]="selectedAttempts.has(item.id)"
+                                (change)="toggleAttemptSelection(item.id)">
                         </div>
-                        <div class="text-end">
-                            <div class="fw-bold" [class.text-success]="item.result?.percentage >= 40"
-                                [class.text-danger]="item.result?.percentage < 40">
-                                {{ item.result?.percentage | number:'1.0-1' }}%
+
+                        <!-- Main Content (Clickable for nav if not select mode) -->
+                        <a [routerLink]="!isSelectionMode ? ['/student/exam-result', item.id] : null"
+                            class="d-flex justify-content-between align-items-center flex-grow-1 text-decoration-none text-dark"
+                            (click)="isSelectionMode ? toggleAttemptSelection(item.id) : null">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark">{{ item.exam?.title || 'Untitled Exam' }}</h6>
+                                <div class="small text-muted">
+                                    <i class="bi bi-calendar me-1"></i> {{ item.submittedAt | date:'medium' }}
+                                </div>
                             </div>
-                            <span class="badge"
-                                [class.bg-success]="item.status === 'EVALUATED' || item.status === 'SUBMITTED'"
-                                [class.bg-secondary]="item.status === 'IN_PROGRESS'">
-                                {{ (item.status === 'SUBMITTED' || item.status === 'EVALUATED') ? 'COMPLETED' :
-                                item.status }}
-                            </span>
-                        </div>
-                    </a>
+                            <div class="text-end">
+                                <div class="fw-bold" [class.text-success]="item.result?.percentage >= 40"
+                                    [class.text-danger]="item.result?.percentage < 40">
+                                    {{ item.result?.percentage | number:'1.0-1' }}%
+                                </div>
+                                <span class="badge"
+                                    [class.bg-success]="item.status === 'EVALUATED' || item.status === 'SUBMITTED'"
+                                    [class.bg-secondary]="item.status === 'IN_PROGRESS'">
+                                    {{ (item.status === 'SUBMITTED' || item.status === 'EVALUATED') ? 'COMPLETED' :
+                                    item.status }}
+                                </span>
+                            </div>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-light" (click)="closeExamHistory()">Close</button>
+            <div class="modal-footer border-top-0 d-flex justify-content-between">
+                <div>
+                    <span *ngIf="isSelectionMode" class="text-muted small">{{ selectedAttempts.size }} selected</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light" (click)="closeExamHistory()">Close</button>
+                    <button *ngIf="isSelectionMode && selectedAttempts.size > 0" type="button" class="btn btn-primary"
+                        (click)="generateCustomReport()">
+                        Generate Analysis ({{ selectedAttempts.size }})
+                    </button>
+                </div>
             </div>
         </div>
     </div>
