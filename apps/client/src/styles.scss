@@ -4,7 +4,6 @@ $danger: #D93444; // Darker shade of primary
 
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons.css';
-@import '../../../node_modules/katex/dist/katex.min.css';
 
 @import 'quill/dist/quill.core.css';
 @import 'quill/dist/quill.snow.css';
@@ -89,4 +88,47 @@ h6 {
         border-color: #EF4F5F;
         box-shadow: 0 0 0 3px rgba(239, 79, 95, 0.1);
     }
+}
+
+/* KaTeX Overrides for better spacing and visibility */
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* matched with padding to allow scroll bar if needed but hide vertical scroll usually */
+    padding: 1em 0;
+    /* Increased padding to prevent clipping of limits/integrals */
+    margin: 0.5em 0;
+}
+
+/* Force standard line-height on all KaTeX elements to prevent external styles from squashing math */
+.katex,
+.katex * {
+    line-height: normal !important;
+    font-family: 'KaTeX_Main', 'Times New Roman', serif !important;
+    font-size: 1.1em;
+}
+
+.katex-display>.katex {
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.katex-html {
+    overflow: visible !important;
+}
+
+/* Container for previews to prevent clipping */
+.math-preview-container {
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Allow drop-downs or tall math to show */
+    max-width: 100%;
+    min-height: 60px;
+    /* Ensure enough minimum height for limits */
+    padding: 10px;
+
+    /* Reset styles that might leak */
+    line-height: normal !important;
+    white-space: normal;
 }

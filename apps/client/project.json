@@ -19,10 +19,16 @@
           {
             "glob": "**/*",
             "input": "apps/client/public"
+          },
+          {
+            "glob": "**/*",
+            "input": "node_modules/katex/dist/fonts",
+            "output": "fonts"
           }
         ],
         "styles": [
-          "apps/client/src/styles.scss"
+          "apps/client/src/styles.scss",
+          "node_modules/katex/dist/katex.min.css"
         ],
         "scripts": [
           "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"

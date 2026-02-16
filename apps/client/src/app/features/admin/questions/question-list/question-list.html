@@ -165,6 +165,11 @@
                             <quill-editor class="content-editor" [styles]="{height: '200px'}"
                                 [(ngModel)]="newQuestion.content.text" name="qText"
                                 placeholder="Enter your question here..."></quill-editor>
+                            <div *ngIf="newQuestion.content.text"
+                                class="mt-2 p-3 bg-light border rounded math-preview-container">
+                                <small class="text-muted d-block mb-1">Preview:</small>
+                                <div [innerHTML]="newQuestion.content.text | mathRender"></div>
+                            </div>
                             <label class="form-label fw-bold mt-2">Image URL (Optional)</label>
                             <input type="text" class="form-control" [(ngModel)]="newQuestion.content.imageUrl"
                                 name="qImage" placeholder="https://example.com/image.png">
@@ -176,6 +181,11 @@
                             <textarea class="form-control" rows="3" [(ngModel)]="newQuestion.explanation"
                                 name="qExplanation"
                                 placeholder="Explain why the answer is correct (Markdown supported)..."></textarea>
+                            <div *ngIf="newQuestion.explanation"
+                                class="mt-2 p-3 bg-light border rounded math-preview-container">
+                                <small class="text-muted d-block mb-1">Preview:</small>
+                                <div [innerHTML]="newQuestion.explanation | mathRender"></div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
@@ -197,20 +207,28 @@
 
                         <div class="col-12">
                             <label class="form-label fw-bold">Options</label>
-                            <div *ngFor="let opt of newQuestion.options; let i = index" class="input-group mb-2">
-                                <div class="input-group-text">
-                                    <ng-container *ngIf="newQuestion.type === 'MCQ_SINGLE'">
-                                        <input class="form-check-input mt-0" type="radio" [checked]="opt.isCorrect"
-                                            (change)="toggleCorrectOption(i)" name="correctOption"
-                                            aria-label="Correct option">
-                                    </ng-container>
-                                    <ng-container *ngIf="newQuestion.type === 'MCQ_MULTI'">
-                                        <input class="form-check-input mt-0" type="checkbox" [checked]="opt.isCorrect"
-                                            (change)="toggleCorrectOption(i)" aria-label="Correct option">
-                                    </ng-container>
+                            <div *ngFor="let opt of newQuestion.options; let i = index" class="mb-2">
+                                <div class="input-group">
+                                    <div class="input-group-text">
+                                        <ng-container *ngIf="newQuestion.type === 'MCQ_SINGLE'">
+                                            <input class="form-check-input mt-0" type="radio" [checked]="opt.isCorrect"
+                                                (change)="toggleCorrectOption(i)" name="correctOption"
+                                                aria-label="Correct option">
+                                        </ng-container>
+                                        <ng-container *ngIf="newQuestion.type === 'MCQ_MULTI'">
+                                            <input class="form-check-input mt-0" type="checkbox"
+                                                [checked]="opt.isCorrect" (change)="toggleCorrectOption(i)"
+                                                aria-label="Correct option">
+                                        </ng-container>
+                                    </div>
+                                    <input type="text" class="form-control" [(ngModel)]="opt.text" [name]="'opt'+i"
+                                        placeholder="Option {{i+1}}">
                                 </div>
-                                <input type="text" class="form-control" [(ngModel)]="opt.text" [name]="'opt'+i"
-                                    placeholder="Option {{i+1}}">
+                                <div *ngIf="opt.text"
+                                    class="ms-5 mt-1 p-2 bg-light border rounded math-preview-container">
+                                    <small class="text-muted d-block mb-1">Preview:</small>
+                                    <div [innerHTML]="opt.text | mathRender"></div>
+                                </div>
                             </div>
                         </div>
 
