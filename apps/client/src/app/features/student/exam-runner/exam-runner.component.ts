@@ -60,6 +60,15 @@ export class ExamRunnerComponent implements OnInit, OnDestroy {
     onWindowBlur() {
         if (this.loading || this.isSubmitting) return;
 
+        // Check if tab switching is explicitly allowed
+        if (this.exam?.settings?.allowTabSwitching) {
+            this.telemetryEvents.push({
+                type: 'FOCUS_LOST_ALLOWED',
+                timestamp: new Date().toISOString()
+            });
+            return;
+        }
+
         this.warningCount++;
         const remaining = this.maxWarnings - this.warningCount;
 

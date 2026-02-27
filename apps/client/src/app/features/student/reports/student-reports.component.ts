@@ -231,8 +231,13 @@ export class StudentReportsComponent implements OnInit {
     this.selectedAttempts.clear(); // Reset selection on open
 
     if (this.examHistory.length === 0) {
-      this.examsService.getHistory().subscribe(history => {
-        this.examHistory = history;
+      this.examsService.getHistory(this.userId).subscribe(history => {
+        // Filter to only show completed attempts
+        this.examHistory = history.filter(h =>
+          h.status === 'SUBMITTED' ||
+          h.status === 'EVALUATED' ||
+          h.status === 'COMPLETED'
+        );
         this.cdr.markForCheck();
       });
     }

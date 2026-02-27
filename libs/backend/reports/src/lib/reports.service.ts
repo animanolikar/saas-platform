@@ -131,6 +131,20 @@ export class ReportsService {
     async getCustomCumulativeReport(userId: string, attemptIds: string[]) {
         if (!attemptIds || attemptIds.length === 0) throw new Error('No exams selected for analysis.');
 
+        // 1. Check Cache: Prevent spamming by checking if this exact combo was already generated
+        const existingReport = await this.prisma.studentAnalyticsReport.findFirst({
+            where: {
+                userId: userId,
+                metadata: {
+                    path: ['selectedAttemptIds'], equals: attemptIds
+                }
+            }
+        });
+
+        if (existingReport) {
+            return { content: existingReport.content };
+        }
+
         // Fetch selected attempts
         const attempts = await this.prisma.examAttempt.findMany({
             where: {
@@ -325,6 +339,36 @@ export class ReportsService {
     }
 
     async getComprehensiveReport(userId: string) {
+        // 0. Cache / Rate Limit Check (Once every 24 hours)
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        const recentReport = await this.prisma.studentAnalyticsReport.findFirst({
+            where: {
+                userId: userId,
+                createdAt: { gte: new Date(Date.now() - ONE_DAY) },
+                metadata: { path: ['type'], equals: 'COMPREHENSIVE' }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!userId) throw new Error('User ID is required.');
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error(`User not found for ID: ${userId}`);
+
+        // 0.5. Quota Check (Max N Zero-to-Hero reports per month per student)
+        const maxQuota = user.aiReportQuota !== undefined ? user.aiReportQuota : 2;
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const monthlyReportCount = await this.prisma.studentAnalyticsReport.count({
+            where: {
+                userId: userId,
+                createdAt: { gte: startOfMonth },
+                metadata: { path: ['type'], equals: 'COMPREHENSIVE' }
+            }
+        });
+
+        if (monthlyReportCount >= maxQuota) {
+            throw new Error(`You have reached your monthly quota of ${maxQuota} Zero-to-Hero AI Strategic Reports. Please try again next month, or review your existing reports.`);
+        }
+
         // 1. Aggregating Data
         const trendData = await this.getStudentPerformanceTrend(userId);
         const trends = trendData.trends;
@@ -332,10 +376,6 @@ export class ReportsService {
 
         const topics = await this.getTopicAnalysis(userId);
         const deepDive = await this.getDeepDiveMetrics(userId);
-
-        if (!userId) throw new Error('User ID is required.');
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user) throw new Error(`User not found for ID: ${userId}`);
 
         // Calculate Consistency (Standard Deviation of last 5 scores)
         const recentScores = trends.slice(-5).map(t => t.percentage);
@@ -406,6 +446,7 @@ export class ReportsService {
                 userId: user.id,
                 content: reportContent,
                 metadata: {
+                    type: 'COMPREHENSIVE',
                     cumulativeObtained: cumulative.totalObtained,
                     cumulativeTotal: cumulative.totalPossible,
                     overallPercentage: cumulative.overallPercentage,
@@ -490,16 +531,8 @@ export class ReportsService {
             change
         };
     }
-    async getTestAnalysis(attemptId: string, forceRegenerate = false) {
-        // 0. Check Cache (if not forced)
-        if (!forceRegenerate) {
-            const existingReport = await this.prisma.studentAnalyticsReport.findFirst({
-                where: { metadata: { path: ['attemptId'], equals: attemptId } }
-            });
-            if (existingReport) return { content: existingReport.content };
-        }
-
-        // 1. Fetch Attempt Data
+    async getTestAnalysis(attemptId: string, userId: string, forceRegenerate = false) {
+        // 1. Fetch Attempt Data early to check permissions
         const attempt = await this.prisma.examAttempt.findUnique({
             where: { id: attemptId },
             include: {
@@ -510,6 +543,39 @@ export class ReportsService {
         });
 
         if (!attempt) throw new Error('Attempt not found');
+        if (attempt.userId !== userId) throw new Error('Unauthorized access to this attempt.');
+
+        // Calculate limits early to return `canRegenerate` flag
+        const maxGenerations = (attempt.exam.settings as any)?.maxAiGenerations !== undefined
+            ? parseInt((attempt.exam.settings as any).maxAiGenerations, 10)
+            : 2; // Default to 2 if not set
+
+        const generationCount = await this.prisma.studentAnalyticsReport.count({
+            where: {
+                userId: attempt.userId,
+                metadata: { path: ['attemptId'], equals: attemptId }
+            }
+        });
+
+        const canRegenerate = maxGenerations === 0 || generationCount < maxGenerations;
+
+        // Check cache first (always check cache if it exists, so we don't regenerate unnecessarily)
+        const existingReport = await this.prisma.studentAnalyticsReport.findFirst({
+            where: { userId: attempt.userId, metadata: { path: ['attemptId'], equals: attemptId } },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (existingReport && !forceRegenerate) {
+            return { content: existingReport.content, canRegenerate };
+        }
+
+        if (existingReport && forceRegenerate) {
+            if (!canRegenerate) {
+                throw new Error(`You have reached the maximum number of AI report regenerations (${maxGenerations}) for this exam.`);
+            }
+        }
+
+
 
         // 2. Compute Metrics
         const totalQuestions = attempt.exam.questions.length;
@@ -626,10 +692,32 @@ export class ReportsService {
                 .catch(err => this.logger.error('Failed to email diagnosis', err));
         }
 
-        return { content: reportContent };
+        // recalculate canRegenerate post-generation
+        const newCanRegenerate = maxGenerations === 0 || (generationCount + 1) < maxGenerations;
+
+        return { content: reportContent, canRegenerate: newCanRegenerate };
     }
 
     async getParentRecommendations(userId: string) {
+        // 0. Cache Check (Once every 24 hours)
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        const recentRecs = await this.prisma.studentAnalyticsReport.findFirst({
+            where: {
+                userId: userId,
+                createdAt: { gte: new Date(Date.now() - ONE_DAY) },
+                metadata: { path: ['type'], equals: 'PARENT_RECOMMENDATIONS' }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (recentRecs) {
+            try {
+                return { recommendations: JSON.parse(recentRecs.content) };
+            } catch (e) {
+                // Fallback to regenerate if parsing fails
+            }
+        }
+
         // 1. Gather Context
         const summary = await this.getDashboardSummary(userId);
         const trends = await this.getStudentPerformanceTrend(userId);
@@ -679,6 +767,19 @@ export class ReportsService {
                 if (Array.isArray(parsed)) {
                     // Ensure string array and limit to 4
                     const recommendations = parsed.map(String).slice(0, 4);
+
+                    // Save to DB to cache
+                    await this.prisma.studentAnalyticsReport.create({
+                        data: {
+                            userId: userId,
+                            content: JSON.stringify(recommendations),
+                            metadata: {
+                                type: 'PARENT_RECOMMENDATIONS',
+                                generatedAt: new Date()
+                            }
+                        }
+                    });
+
                     return { recommendations };
                 }
             } catch (jsonError) {

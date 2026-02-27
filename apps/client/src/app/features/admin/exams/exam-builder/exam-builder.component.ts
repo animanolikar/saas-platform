@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { lastValueFrom } from 'rxjs';
 import { ExamsService } from '../../../../core/services/exams.service';
 import { QuestionsService } from '../../../../core/services/questions.service';
 
@@ -172,6 +173,160 @@ export class ExamBuilderComponent implements OnInit {
     }
 
     this.filteredQuestions = filtered;
+  }
+
+  // --- Bulk Selection Logic ---
+  selectedBankQuestions: Set<string> = new Set();
+
+  toggleQuestionSelection(questionId: string) {
+    if (this.selectedBankQuestions.has(questionId)) {
+      this.selectedBankQuestions.delete(questionId);
+    } else {
+      this.selectedBankQuestions.add(questionId);
+    }
+  }
+
+  isQuestionSelected(questionId: string): boolean {
+    return this.selectedBankQuestions.has(questionId);
+  }
+
+  selectAllFiltered() {
+    this.filteredQuestions.forEach(q => {
+      if (!this.isQuestionAdded(q.id)) {
+        this.selectedBankQuestions.add(q.id);
+      }
+    });
+  }
+
+  deselectAll() {
+    this.selectedBankQuestions.clear();
+  }
+
+  get selectedCount(): number {
+    return this.selectedBankQuestions.size;
+  }
+
+  addSelectedQuestions() {
+    if (this.selectedCount === 0 || this.adding) return;
+
+    if (!confirm(`Add ${this.selectedCount} questions to ${this.activeSectionId === 'GENERAL' ? 'General' : 'Current Section'}?`)) return;
+
+    this.adding = true;
+    const questionsToAdd = this.allQuestions.filter(q => this.selectedBankQuestions.has(q.id));
+    const currentSectionId = this.activeSectionId === 'GENERAL' ? null : this.activeSectionId;
+
+    // We'll add them one by one for now as the service likely doesn't support bulk add yet, 
+    // or we can loop through them. Ideally backend should support bulk, but loop is safer without backend changes.
+    // Actually, let's check if we can parallelize or sequence them.
+
+    let completed = 0;
+    let errors = 0;
+
+    // Create an array of observables/promises
+    const tasks = questionsToAdd.map(q => {
+      const payload = {
+        questionId: q.id,
+        sectionId: currentSectionId,
+        marks: this.exam.settings?.defaultPositiveMarks || 1,
+        negativeMarks: this.exam.settings?.defaultNegativeMarks || 0,
+        order: (this.exam.questions?.length || 0) + (this.exam.sections?.flatMap((s: any) => s.questions || []).length || 0) + 1 // Rough order
+      };
+      return lastValueFrom(this.examsService.addQuestion(this.examId!, payload));
+    });
+
+    Promise.allSettled(tasks).then((results) => {
+      results.forEach((res, index) => {
+        if (res.status === 'fulfilled') {
+          const addedQ = res.value;
+          const originalQ = questionsToAdd[index];
+          // Optimistic Update clone
+          const fullQuestionDetails = { ...addedQ, question: originalQ };
+          if (currentSectionId) {
+            const sec = this.exam.sections.find((s: any) => s.id === currentSectionId);
+            if (sec) {
+              if (!sec.questions) sec.questions = [];
+              sec.questions.push(fullQuestionDetails);
+            }
+          } else {
+            if (!this.exam.questions) this.exam.questions = [];
+            this.exam.questions.push(fullQuestionDetails);
+          }
+        } else {
+          console.error('Failed to add question', res.reason);
+          errors++;
+        }
+      });
+
+      this.adding = false;
+      this.selectedBankQuestions.clear(); // Clear selection after adding
+      this.updateCurrentList();
+      this.cdr.detectChanges();
+
+      if (errors > 0) {
+        alert(`Added ${tasks.length - errors} questions. Failed to add ${errors} questions.`);
+      } else {
+        // success toast?
+      }
+    });
+  }
+
+  // --- Bulk Remove Logic (Section) ---
+  selectedSectionQuestions: Set<string> = new Set();
+
+  toggleSectionQuestionSelection(examQuestionId: string) {
+    if (this.selectedSectionQuestions.has(examQuestionId)) {
+      this.selectedSectionQuestions.delete(examQuestionId);
+    } else {
+      this.selectedSectionQuestions.add(examQuestionId);
+    }
+  }
+
+  isSectionQuestionSelected(examQuestionId: string): boolean {
+    return this.selectedSectionQuestions.has(examQuestionId);
+  }
+
+  selectAllSectionQuestions() {
+    this.currentQuestionsList.forEach(q => this.selectedSectionQuestions.add(q.id));
+  }
+
+  deselectAllSectionQuestions() {
+    this.selectedSectionQuestions.clear();
+  }
+
+  get selectedSectionCount(): number {
+    return this.selectedSectionQuestions.size;
+  }
+
+  removeSelectedQuestions() {
+    if (this.selectedSectionCount === 0) return;
+    if (!confirm(`Remove ${this.selectedSectionCount} questions from this section?`)) return;
+
+    const questionsToRemove = Array.from(this.selectedSectionQuestions);
+    const tasks = questionsToRemove.map(id =>
+      lastValueFrom(this.examsService.removeQuestion(this.examId!, id))
+    );
+
+    Promise.allSettled(tasks).then((results) => {
+      // Optimistic Update
+      questionsToRemove.forEach(id => {
+        // Check General
+        if (this.exam.questions) {
+          this.exam.questions = this.exam.questions.filter((q: any) => q.id !== id);
+        }
+        // Check Sections
+        if (this.exam.sections) {
+          this.exam.sections.forEach((sec: any) => {
+            if (sec.questions) {
+              sec.questions = sec.questions.filter((q: any) => q.id !== id);
+            }
+          });
+        }
+      });
+
+      this.selectedSectionQuestions.clear();
+      this.updateCurrentList();
+      this.cdr.detectChanges();
+    });
   }
 
   isQuestionAdded(questionId: string): boolean {

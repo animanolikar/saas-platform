@@ -129,13 +129,15 @@
                 </div>
 
                 <!-- AI Diagnosis -->
-                <button
-                    class="btn btn-outline-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 mb-3"
-                    (click)="generateDiagnosis(true)" [disabled]="aiDiagnosisLoading">
-                    <i class="bi bi-arrow-clockwise" *ngIf="!aiDiagnosisLoading"></i>
-                    <span class="spinner-border spinner-border-sm" *ngIf="aiDiagnosisLoading"></span>
-                    {{ aiDiagnosisLoading ? 'Analyzing...' : 'Regenerate Analysis' }}
-                </button>
+                <ng-container *ngIf="canRegenerate">
+                    <button
+                        class="btn btn-outline-primary w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 mb-3"
+                        (click)="generateDiagnosis(true)" [disabled]="aiDiagnosisLoading">
+                        <i class="bi bi-arrow-clockwise" *ngIf="!aiDiagnosisLoading"></i>
+                        <span class="spinner-border spinner-border-sm" *ngIf="aiDiagnosisLoading"></span>
+                        {{ aiDiagnosisLoading ? 'Analyzing...' : 'Regenerate Analysis' }}
+                    </button>
+                </ng-container>
 
                 <div class="card border-0 shadow-sm rounded-4 p-3 bg-white" *ngIf="aiDiagnosisReport">
                     <h6 class="fw-bold text-primary mb-3">

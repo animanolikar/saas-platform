@@ -24,6 +24,23 @@ model Organization {
   tags      Tag[]
   exams     Exam[]
   examAttempts ExamAttempt[]
+  paymentIntegrations PaymentIntegration[]
+}
+
+model PaymentIntegration {
+  id             String       @id @default(uuid())
+  organizationId String       
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  provider       String       // "RAZORPAY" or "PHONEPE"
+  apiKey         String?      // Razorpay Key ID or PhonePe Merchant ID
+  apiSecret      String?      // Razorpay Secret or PhonePe Salt/Key
+  isActive       Boolean      @default(false)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, provider])
 }
 
 model User {
@@ -45,6 +62,8 @@ model User {
   updatedAt      DateTime     @updatedAt
   isTempPassword Boolean      @default(false)
   
+  aiReportQuota  Int          @default(2) // Global Zero-to-Hero Ai Reports allowed per month
+
   academicYear   String?      // e.g. "2025-26"
   batch          String?      // e.g. "A", "B", "Alpha"
 

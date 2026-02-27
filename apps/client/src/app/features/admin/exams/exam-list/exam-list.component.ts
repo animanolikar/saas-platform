@@ -38,6 +38,9 @@ export class ExamListComponent implements OnInit, AfterViewInit {
             defaultPositiveMarks: 1,
             defaultNegativeMarks: 0,
             isProctoringEnabled: false,
+            allowTabSwitching: false,
+            isAiAnalysisEnabled: true,
+            maxAiGenerations: 2,
             maxAttempts: 1,
             allowResume: false
         }
@@ -114,6 +117,9 @@ export class ExamListComponent implements OnInit, AfterViewInit {
                 defaultPositiveMarks: 1,
                 defaultNegativeMarks: 0,
                 isProctoringEnabled: false,
+                allowTabSwitching: false,
+                isAiAnalysisEnabled: true,
+                maxAiGenerations: 2,
                 maxAttempts: 1,
                 allowResume: false
             }
@@ -134,6 +140,9 @@ export class ExamListComponent implements OnInit, AfterViewInit {
                 defaultPositiveMarks: exam.settings?.defaultPositiveMarks || 1,
                 defaultNegativeMarks: exam.settings?.defaultNegativeMarks || 0,
                 isProctoringEnabled: exam.settings?.isProctoringEnabled || false,
+                allowTabSwitching: exam.settings?.allowTabSwitching !== undefined ? exam.settings.allowTabSwitching : false,
+                isAiAnalysisEnabled: exam.settings?.isAiAnalysisEnabled !== undefined ? exam.settings.isAiAnalysisEnabled : true,
+                maxAiGenerations: exam.settings?.maxAiGenerations !== undefined ? exam.settings.maxAiGenerations : 2,
                 maxAttempts: exam.settings?.maxAttempts || 0,
                 allowResume: exam.settings?.allowResume || false
             }

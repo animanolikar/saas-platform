@@ -23,6 +23,7 @@ export const appRoutes: Route[] = [
             { path: 'exams/:id/results', loadComponent: () => import('./features/admin/exams/exam-results/exam-results.component').then(m => m.ExamResultsComponent) },
             { path: 'exams/results/:attemptId', loadComponent: () => import('./features/admin/exams/exam-results/result-detail/result-detail.component').then(m => m.ResultDetailComponent) },
             { path: 'activity', loadComponent: () => import('./features/admin/activity/activity-list').then(m => m.ActivityListComponent) },
+            { path: 'billing', loadComponent: () => import('./features/admin/billing/billing.component').then(m => m.BillingComponent) },
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
         ]
     },

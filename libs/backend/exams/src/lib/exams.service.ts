@@ -90,8 +90,8 @@ export class ExamsService {
             throw new BadRequestException(`This exam is scheduled for ${new Date(exam.scheduledAt).toLocaleString()}. You cannot start it yet.`);
         }
 
-        // 2. Check for ANY existing Attempt
-        const existingAttempt = await this.prisma.examAttempt.findFirst({
+        // 2. Check for Existing Attempts
+        const userAttempts = await this.prisma.examAttempt.findMany({
             where: {
                 examId: examId,
                 userId: userId
@@ -99,14 +99,22 @@ export class ExamsService {
             orderBy: { startedAt: 'desc' }
         });
 
-        if (existingAttempt) {
-            if (existingAttempt.status === 'SUBMITTED' || existingAttempt.status === 'EVALUATED') {
-                throw new BadRequestException('Exam already submitted. You cannot attempt it again.');
-            }
-            // If IN_PROGRESS, we resume it (logic below uses 'attempt' variable)
+        const inProgressAttempt = userAttempts.find(a => a.status === 'IN_PROGRESS');
+        const submittedAttemptsCount = userAttempts.filter(a => a.status === 'SUBMITTED' || a.status === 'EVALUATED').length;
+
+        const settings = exam.settings as any;
+        const maxAttempts = settings?.maxAttempts ? parseInt(settings.maxAttempts, 10) : 0;
+
+        // Block if no attempt in progress and limit reached
+        if (!inProgressAttempt && maxAttempts > 0 && submittedAttemptsCount >= maxAttempts) {
+            throw new BadRequestException(`You have reached the maximum number of attempts (${maxAttempts}) for this exam.`);
         }
 
-        let attempt = existingAttempt;
+        // Also respect the old default logic: if unlimited (0) but allowResume is false, 
+        // we might want to be careful. But strictly following maxAttempts is better.
+        // Assuming unlimited = 0 means infinite attempts. But if we must resume only, it's fine.
+
+        let attempt = inProgressAttempt;
 
         // 3. Create new attempt if none exists (and none submitted)
         if (!attempt) {
@@ -356,10 +364,15 @@ export class ExamsService {
         }
 
         // 4. Trigger Deep AI Analysis (Background / Fire-and-Forget)
-        // We do not await this to ensure fast response time for 100+ questions
-        this.processDeepAiAnalysis(attempt.id, exam.questions, answers).catch(err => {
-            console.error("Background AI Processing Failed:", err);
-        });
+        // Check if explicitly disabled (default was originally true)
+        const isAiEnabled = (exam.settings as any)?.isAiAnalysisEnabled !== false;
+
+        if (isAiEnabled) {
+            // We do not await this to ensure fast response time for 100+ questions
+            this.processDeepAiAnalysis(attempt.id, exam.questions, answers).catch(err => {
+                console.error("Background AI Processing Failed:", err);
+            });
+        }
 
         return attempt;
     }
@@ -724,7 +737,9 @@ export class ExamsService {
         });
 
         // 5. Send Emails (Fire and Forget)
-        const examLink = `http://localhost:4200/student/exam/${examId}/start`;
+        const frontendUrl = process.env['FRONTEND_URL'] ||
+            (process.env['NODE_ENV'] === 'development' ? 'http://localhost:4200' : 'http://brahmand.co');
+        const examLink = `${frontendUrl}/student/exam/${examId}/start`;
 
         // Deduplicate emails first
         const uniqueEmails = new Map<string, string>();
@@ -770,7 +785,6 @@ export class ExamsService {
                 attempts: {
                     where: { userId: userId },
                     orderBy: { startedAt: 'desc' },
-                    take: 1,
                     select: { id: true, status: true, totalScore: true, result: true, startedAt: true, submittedAt: true }
                 }
             },

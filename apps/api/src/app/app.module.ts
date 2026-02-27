@@ -9,6 +9,8 @@ import { UsersModule } from '@sps/backend/users';
 import { QuestionsModule } from '@saas-platform/backend/questions';
 import { ExamsModule } from '@saas-platform/backend/exams';
 import { ReportsModule } from '@saas-platform/backend/reports';
+import { AiModule } from '@saas-platform/backend-ai';
+import { PaymentsModule } from '@saas-platform/backend/payments';
 
 import { CacheModule } from '@nestjs/cache-manager';
 
@@ -21,7 +23,10 @@ import { CacheModule } from '@nestjs/cache-manager';
     UsersModule,
     QuestionsModule,
     ExamsModule,
-    ReportsModule
+    ExamsModule,
+    ReportsModule,
+    AiModule,
+    PaymentsModule
   ],
   controllers: [AppController],
   providers: [AppService],

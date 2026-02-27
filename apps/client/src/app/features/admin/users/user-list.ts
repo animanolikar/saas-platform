@@ -17,11 +17,13 @@ import { StudentReportsComponent } from '../../student/reports/student-reports.c
 })
 export class UserListComponent implements OnInit {
   allUsers: any[] = [];
+  filteredUsers: any[] = []; // Store filtered list
   users: any[] = [];
   loading = false;
   uploading = false;
   error = '';
   success = '';
+  searchQuery = ''; // Search query model
 
   // Pagination
   pager: PageState = {} as PageState;
@@ -47,7 +49,8 @@ export class UserListComponent implements OnInit {
       next: (data) => {
         console.log('Users loaded:', data);
         this.allUsers = data;
-        this.setPage(1);
+        this.filteredUsers = data; // Initialize filtered list
+        this.filterUsers(); // Apply any existing filter (or just set pagination)
         this.loading = false;
         this.cdr.detectChanges(); // Force view update
       },
@@ -58,6 +61,20 @@ export class UserListComponent implements OnInit {
         this.cdr.detectChanges(); // Force view update
       }
     });
+  }
+
+  filterUsers() {
+    if (!this.searchQuery) {
+      this.filteredUsers = this.allUsers;
+    } else {
+      const query = this.searchQuery.toLowerCase();
+      this.filteredUsers = this.allUsers.filter(user =>
+        (user.firstName && user.firstName.toLowerCase().includes(query)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(query)) ||
+        (user.email && user.email.toLowerCase().includes(query))
+      );
+    }
+    this.setPage(1); // Reset to first page of results
   }
 
   onFileSelected(event: any) {
@@ -162,11 +179,12 @@ export class UserListComponent implements OnInit {
     email: '',
     role: 'STUDENT',
     academicYear: '',
-    batch: ''
+    batch: '',
+    aiReportQuota: 2
   };
 
   openAddUserModal() {
-    this.newUser = { firstName: '', lastName: '', email: '', role: 'STUDENT', academicYear: '', batch: '' };
+    this.newUser = { firstName: '', lastName: '', email: '', role: 'STUDENT', academicYear: '', batch: '', aiReportQuota: 2 };
     if (typeof bootstrap !== 'undefined') {
       const modalEl = document.getElementById('addUserModal');
       if (modalEl) {
@@ -214,7 +232,8 @@ export class UserListComponent implements OnInit {
       return;
     }
     this.currentPage = page;
-    this.pager = this.paginationService.paginate(this.allUsers, page, this.pageSize);
+    // Use filteredUsers for pagination
+    this.pager = this.paginationService.paginate(this.filteredUsers, page, this.pageSize);
     this.users = this.pager.pagedItems;
     this.pages = this.paginationService.getPages(this.pager.totalPages);
   }

@@ -10,23 +10,48 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@saas-platform/auth": ["libs/backend/auth/src/index.ts"],
-      "@saas-platform/prisma": ["libs/backend/prisma/src/index.ts"],
-      "@sps/backend/teams": ["libs/backend/teams/src/index.ts"],
-      "@sps/backend/users": ["libs/backend/users/src/index.ts"],
+      "@saas-platform/auth": [
+        "libs/backend/auth/src/index.ts"
+      ],
+      "@saas-platform/prisma": [
+        "libs/backend/prisma/src/index.ts"
+      ],
+      "@sps/backend/teams": [
+        "libs/backend/teams/src/index.ts"
+      ],
+      "@sps/backend/users": [
+        "libs/backend/users/src/index.ts"
+      ],
       "@saas-platform/backend/questions": [
         "libs/backend/questions/src/index.ts"
       ],
-      "@saas-platform/backend/exams": ["libs/backend/exams/src/index.ts"],
-      "@saas-platform/backend-ai": ["libs/backend/ai/src/index.ts"],
-      "@saas-platform/email": ["libs/backend/email/src/index.ts"],
-      "@saas-platform/backend/reports": ["libs/backend/reports/src/index.ts"]
+      "@saas-platform/backend/exams": [
+        "libs/backend/exams/src/index.ts"
+      ],
+      "@saas-platform/backend-ai": [
+        "libs/backend/ai/src/index.ts"
+      ],
+      "@saas-platform/email": [
+        "libs/backend/email/src/index.ts"
+      ],
+      "@saas-platform/backend/reports": [
+        "libs/backend/reports/src/index.ts"
+      ],
+      "@saas-platform/backend/payments": [
+        "libs/backend/payments/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }

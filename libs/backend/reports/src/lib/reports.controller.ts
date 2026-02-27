@@ -56,10 +56,10 @@ export class ReportsController {
     }
 
     @Get('student/attempt/:attemptId/analyze')
-    async analyzeAttempt(@Req() req: any, @Param('attemptId') attemptId: string, @Query('force') force?: string) {
-        // We might want to verify user owns the attempt here.
+    async analyzeAttempt(@Req() req: any, @Param('attemptId') attemptId: string, @Query('force') force?: string, @Query('userId') userId?: string) {
+        const targetId = this.resolveUserId(req, userId);
         const shouldForce = force === 'true';
-        return this.reportsService.getTestAnalysis(attemptId, shouldForce);
+        return this.reportsService.getTestAnalysis(attemptId, targetId, shouldForce);
     }
 
     private resolveUserId(req: any, queryUserId?: string): string {

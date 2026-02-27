@@ -1,0 +1,18 @@
+<div class="border rounded bg-white shadow-sm">
+    <div class="d-flex justify-content-between p-2 bg-light border-bottom">
+        <small class="text-muted">Draw your math equation below</small>
+        <button class="btn btn-sm btn-outline-danger" (click)="clear()">
+            <i class="bi bi-trash"></i> Clear
+        </button>
+    </div>
+    <div class="canvas-container bg-white" style="height: 300px; cursor: crosshair;">
+        <canvas #canvas (mousedown)="startDrawing($event)" (mousemove)="draw($event)" (mouseup)="stopDrawing()"
+            (mouseleave)="stopDrawing()" (touchstart)="startDrawing($event)" (touchmove)="draw($event)"
+            (touchend)="stopDrawing()"></canvas>
+    </div>
+    <div class="p-2 border-top text-end">
+        <button class="btn btn-primary" (click)="exportImage()">
+            <i class="bi bi-check-lg"></i> Convert to LaTeX
+        </button>
+    </div>
+</div>

@@ -1,8 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuestionsService } from '../../../../core/services/questions.service';
 import { PaginationService, PageState } from '../../../../core/services/pagination.service';
+import { AiService } from '../../../../core/services/ai.service';
+import { MathParserService } from '../../../../core/services/math-parser.service';
+import { MathCanvasComponent } from '../../../../shared/components/math-canvas/math-canvas.component';
 
 declare var bootstrap: any;
 
@@ -13,7 +16,7 @@ import { MathRenderPipe } from '../../../../core/pipes/math-render.pipe';
 @Component({
     selector: 'app-question-list',
     standalone: true,
-    imports: [CommonModule, FormsModule, QuillModule, MathRenderPipe],
+    imports: [CommonModule, FormsModule, QuillModule, MathRenderPipe, MathCanvasComponent],
     templateUrl: './question-list.html',
 })
 export class QuestionListComponent implements OnInit {
@@ -54,10 +57,18 @@ export class QuestionListComponent implements OnInit {
     tagInput = '';
     currentQuestionId: string | null = null;
 
+    // AI & Math Support
+    aiPrompt = '';
+    aiLoading = false;
+    activeField: 'question' | 'explanation' | 'option' = 'question';
+    activeOptionIndex = -1;
+
     constructor(
         private questionsService: QuestionsService,
         private cdr: ChangeDetectorRef,
-        private paginationService: PaginationService
+        private paginationService: PaginationService,
+        private aiService: AiService,
+        private mathParser: MathParserService
     ) { }
 
     ngOnInit() {
@@ -146,6 +157,7 @@ export class QuestionListComponent implements OnInit {
             tags: []
         };
         this.tagInput = '';
+        this.activeField = 'question'; // Reset focus
 
         if (typeof bootstrap !== 'undefined') {
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('createQuestionModal'));
@@ -165,6 +177,7 @@ export class QuestionListComponent implements OnInit {
             tags: q.tags ? q.tags.map((t: any) => t.tag.name) : []
         }));
         this.tagInput = '';
+        this.activeField = 'question';
 
         if (typeof bootstrap !== 'undefined') {
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('createQuestionModal'));
@@ -254,5 +267,108 @@ export class QuestionListComponent implements OnInit {
                 }
             });
         }
+    }
+
+    // --- AI & Math Toolbar Functions ---
+
+    setActiveField(field: 'question' | 'explanation' | 'option', index: number = -1) {
+        this.activeField = field;
+        this.activeOptionIndex = index;
+    }
+
+    insertMath(latex: string) {
+        // Append LaTeX to active field
+        if (this.activeField === 'question') {
+            this.newQuestion.content.text += ` $$${latex}$$ `;
+        } else if (this.activeField === 'explanation') {
+            this.newQuestion.explanation += ` $$${latex}$$ `;
+        } else if (this.activeField === 'option' && this.activeOptionIndex >= 0) {
+            this.newQuestion.options[this.activeOptionIndex].text += ` $$${latex}$$ `;
+        }
+    }
+
+    parseSmartSyntax(input: string) {
+        // Just for live preview demos, usually handled by pipe or real-time parser wrapper
+        return this.mathParser.parse(input);
+    }
+
+    smartSyntax() {
+        const input = prompt('Enter Smart Syntax (e.g., int(0,1,x^2)):');
+        if (input) {
+            const latex = this.parseSmartSyntax(input);
+            this.insertMath(latex);
+        }
+    }
+
+    openAiModal() {
+        this.aiPrompt = '';
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('aiTextModal'));
+            modal.show();
+        }
+    }
+
+    generateAiText() {
+        if (!this.aiPrompt.trim()) return;
+        this.aiLoading = true;
+        this.aiService.convertTextToLatex(this.aiPrompt).subscribe(latex => {
+            this.aiLoading = false;
+            this.insertMath(latex);
+            // Close modal
+            if (typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('aiTextModal'));
+                modal.hide();
+            }
+        });
+    }
+
+    @ViewChild(MathCanvasComponent) mathCanvas!: MathCanvasComponent;
+
+    // ... existing code ...
+
+    openHandwritingModal() {
+        if (typeof bootstrap !== 'undefined') {
+            const element = document.getElementById('handwritingModal');
+            if (element) {
+                const modal = bootstrap.Modal.getOrCreateInstance(element);
+
+                // Resize canvas once modal is fully shown
+                element.addEventListener('shown.bs.modal', () => {
+                    if (this.mathCanvas) {
+                        setTimeout(() => {
+                            this.mathCanvas.resizeCanvas();
+                            this.mathCanvas.clear();
+                        }, 100);
+                    }
+                }, { once: true });
+
+                modal.show();
+            }
+        }
+    }
+
+    onHandwritingConverted(imageBase64: string) {
+        if (!imageBase64 || imageBase64 === 'data:,') {
+            alert('Canvas error. Please close and reopen the handwriting tool.');
+            if (this.mathCanvas) this.mathCanvas.resizeCanvas();
+            return;
+        }
+
+        this.aiLoading = true;
+        this.aiService.convertImageToLatex(imageBase64).subscribe({
+            next: (latex) => {
+                this.aiLoading = false;
+                this.insertMath(latex);
+                // Close modal
+                if (typeof bootstrap !== 'undefined') {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('handwritingModal'));
+                    modal.hide();
+                }
+            },
+            error: (err) => {
+                this.aiLoading = false;
+                alert('Failed to process handwriting. Please try again.');
+            }
+        });
     }
 }

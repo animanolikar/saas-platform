@@ -32,8 +32,7 @@
                             <i class="bi bi-question-circle me-1"></i> {{ ex._count?.questions || 0 }} Qs
                         </div>
 
-                        <ng-container
-                            *ngIf="ex.attempts?.length > 0 && ex.attempts[0].status === 'IN_PROGRESS'; else startBtn">
+                        <ng-container *ngIf="hasInProgressAttempt(ex); else startBtn">
                             <!-- Resume only if allowed -->
                             <ng-container *ngIf="ex.settings?.allowResume">
                                 <button class="btn btn-warning text-dark rounded-pill px-4"
@@ -99,7 +98,7 @@
                                 Score: {{ ex.attempts[0].result?.percentage | number:'1.0-0' }}%
                             </div>
                             <button class="btn btn-outline-success rounded-pill px-4"
-                                [routerLink]="['/student/exam', ex.attempts[0].id, 'result']">
+                                [routerLink]="['/student/exam', getLatestAttemptId(ex), 'result']">
                                 View Result
                             </button>
                         </div>

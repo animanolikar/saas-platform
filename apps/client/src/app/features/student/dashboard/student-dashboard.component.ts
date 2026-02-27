@@ -28,11 +28,20 @@ export class StudentDashboardComponent implements OnInit {
         // Load Available Exams
         this.examsService.getAvailableExams().subscribe({
             next: (data) => {
-                this.availableExams = data.filter((ex: any) =>
-                    !ex.attempts?.length || ex.attempts[0].status === 'IN_PROGRESS'
-                );
+                this.availableExams = data.filter((ex: any) => {
+                    const attempts = ex.attempts || [];
+                    const submittedCount = attempts.filter((a: any) => ['SUBMITTED', 'EVALUATED'].includes(a.status)).length;
+                    const inProgress = attempts.some((a: any) => a.status === 'IN_PROGRESS');
+                    const max = ex.settings?.maxAttempts ? parseInt(ex.settings.maxAttempts, 10) : 0;
+
+                    if (inProgress) return true; // Can resume
+                    if (max === 0) return true; // Unlimited attempts
+                    if (submittedCount < max) return true; // Can start new attempt
+                    return false;
+                });
+
                 this.attemptedExams = data.filter((ex: any) =>
-                    ex.attempts?.length && ['SUBMITTED', 'EVALUATED'].includes(ex.attempts[0].status)
+                    ex.attempts?.some((a: any) => ['SUBMITTED', 'EVALUATED'].includes(a.status))
                 );
 
                 this.loading = false;
@@ -78,5 +87,14 @@ export class StudentDashboardComponent implements OnInit {
         }
 
         return `Starts in ${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    hasInProgressAttempt(exam: any): boolean {
+        return exam.attempts?.some((a: any) => a.status === 'IN_PROGRESS');
+    }
+
+    getLatestAttemptId(exam: any): string | null {
+        if (!exam.attempts || exam.attempts.length === 0) return null;
+        return exam.attempts[0].id;
     }
 }

@@ -20,6 +20,7 @@ export class StudentExamResultComponent implements OnInit {
 
     aiDiagnosisLoading = false;
     aiDiagnosisReport: string | null = null;
+    canRegenerate = true;
 
     constructor(
         private route: ActivatedRoute,
@@ -114,14 +115,17 @@ export class StudentExamResultComponent implements OnInit {
         this.aiDiagnosisLoading = true;
 
         this.reportsService.getTestAnalysis(this.attemptId, force).subscribe({
-            next: async (res) => {
+            next: async (res: any) => {
                 this.aiDiagnosisReport = await marked.parse(res.content);
+                this.canRegenerate = res.canRegenerate !== undefined ? res.canRegenerate : true;
                 this.aiDiagnosisLoading = false;
                 this.cdr.detectChanges();
             },
             error: (err) => {
                 console.error(err);
-                // alert('Failed to generate AI Diagnosis'); // Suppress error for auto-load to avoid annoying popups
+                if (force) {
+                    alert(err.error?.message || 'Failed to generate AI Diagnosis. You may have reached the maximum allowed regenerations.');
+                }
                 this.aiDiagnosisLoading = false;
                 this.cdr.detectChanges();
             }

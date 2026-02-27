@@ -34,6 +34,10 @@ export class EmailService {
     }
 
     async sendUserWelcome(email: string, firstName: string, tempPassword: string) {
+        const frontendUrl = process.env['FRONTEND_URL'] ||
+            (process.env['NODE_ENV'] === 'development' ? 'http://localhost:4200' : 'http://brahmand.co');
+        const loginLink = `${frontendUrl}/login`;
+
         const subject = 'Welcome to Yukti Platform! 🚀';
         const html = `
 <!DOCTYPE html>
@@ -91,7 +95,7 @@ export class EmailService {
 
                 <!-- CTA -->
                 <div align="center" style="margin-top: 30px;">
-                    <a href="http://brahmand.co/login" style="display: inline-block; padding: 14px 32px; background-color: #E10600; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.3s ease;">Login to Dashboard</a>
+                    <a href="${loginLink}" style="display: inline-block; padding: 14px 32px; background-color: #E10600; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.3s ease;">Login to Dashboard</a>
                 </div>
             </td>
         </tr>

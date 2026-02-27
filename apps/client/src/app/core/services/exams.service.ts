@@ -51,8 +51,10 @@ export class ExamsService {
         return this.http.post<any>(`${this.apiUrl}/${examId}/save`, { answers });
     }
 
-    getHistory(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.apiUrl}/history`);
+    getHistory(userId?: string): Observable<any[]> {
+        const params: any = {};
+        if (userId) params.userId = userId;
+        return this.http.get<any[]>(`${this.apiUrl}/history`, { params });
     }
 
     getExamAttempts(examId: string): Observable<any[]> {

@@ -11,7 +11,7 @@ export class AiService {
         const apiKey = process.env['GEMINI_API_KEY'];
         if (apiKey) {
             this.genAI = new GoogleGenerativeAI(apiKey);
-            // User requested "Pro" level model (assuming 1.5-pro as 2.5 is not available/typo)
+            // User requested "Pro" level model
             this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
         } else {
             this.logger.warn('GEMINI_API_KEY not found. AI features will be disabled.');
@@ -159,5 +159,60 @@ You have a **volatile but upward** trajectory. The dip in Physics was a wake-up 
 # 🏁 Final Encouragement
 You have the raw talent to be a topper. The jump from 70% to 85% proves it. Stay consistent, trust the process, and let's aim for that 95% next!
         `;
+    }
+    async convertMathToLatex(text: string): Promise<string> {
+        if (!this.model) {
+            return text; // Fallback
+        }
+        try {
+            const prompt = `
+            Task: Convert the following natural language math description into standard LaTeX syntax.
+            Input: "${text}"
+            Output Rule: Return ONLY the LaTeX code. Do not include markdown \`\`\` wrappers. Do not include explanation.
+            Example: "integral from 0 to 1 of x squared" -> \\int_{0}^{1} x^2 \\, dx
+            `;
+            const result = await this.model.generateContent(prompt);
+            const response = await result.response;
+            let latex = response.text().trim();
+            // Clean up if model adds markdown despite instructions
+            latex = latex.replace(/^```latex/, '').replace(/^```/, '').replace(/```$/, '').trim();
+            return latex;
+        } catch (e) {
+            this.logger.error('Failed to convert math to latex', e);
+            return text;
+        }
+    }
+
+    async convertImageToLatex(imageBase64: string): Promise<string> {
+        if (!this.genAI) {
+            throw new Error('Gemini API Key not configured');
+        }
+        try {
+            // Use Flash for speed and cost for vision tasks
+            const visionModel = this.genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+
+            // Remove header if present (data:image/png;base64,)
+            const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+            const prompt = "Convert the handwriting in this image to valid LaTeX math code. Return ONLY the LaTeX. Do not wrap in markdown.";
+
+            const result = await visionModel.generateContent([
+                prompt,
+                {
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: "image/png"
+                    }
+                }
+            ]);
+            const response = await result.response;
+            let latex = response.text().trim();
+            // Clean up
+            latex = latex.replace(/^```latex/, '').replace(/^```/, '').replace(/```$/, '').trim();
+            return latex;
+        } catch (e) {
+            this.logger.error('Failed to convert image to latex', e);
+            throw new Error('Failed to process image');
+        }
     }
 }

@@ -164,15 +164,43 @@
                             <div class="form-text x-small">Enter positive value (e.g. 0.25 will deduct 0.25)</div>
                         </div>
                         <div class="col-12 mt-2 pt-2 border-top">
-                            <div class="form-check form-switch">
+                            <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" id="proctoringSwitch"
                                     [(ngModel)]="newExam.settings.isProctoringEnabled" name="proctoring">
                                 <label class="form-check-label fw-medium" for="proctoringSwitch">
                                     <i class="bi bi-camera-video me-1"></i> Enable Webcam Proctoring
                                 </label>
+                                <div class="form-text x-small">If enabled, students must grant camera access to take
+                                    the exam.</div>
                             </div>
-                            <div class="form-text x-small ms-4">If enabled, students must grant camera access to take
-                                the exam.</div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="tabSwitchingSwitch"
+                                    [(ngModel)]="newExam.settings.allowTabSwitching" name="tabSwitching">
+                                <label class="form-check-label fw-medium" for="tabSwitchingSwitch">
+                                    <i class="bi bi-window-stack me-1"></i> Allow Tab Switching
+                                </label>
+                                <div class="form-text x-small">If disabled, the exam will be auto-submitted or paused if
+                                    the student switches tabs.</div>
+                            </div>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input text-info" type="checkbox" id="aiAnalysisSwitch"
+                                    [(ngModel)]="newExam.settings.isAiAnalysisEnabled" name="aiAnalysis">
+                                <label class="form-check-label fw-medium text-info" for="aiAnalysisSwitch">
+                                    <i class="bi bi-robot me-1"></i> Enable AI Answer Insights
+                                </label>
+                                <div class="form-text x-small">If enabled, Gemini AI will automatically analyze
+                                    subjective/code answers upon submission to generate detailed feedback and scores.
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label fw-medium text-warning mb-1">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Max Student Report Regenerations
+                                </label>
+                                <input type="number" class="form-control form-control-sm w-25"
+                                    [(ngModel)]="newExam.settings.maxAiGenerations" name="maxAiGenerations" min="0">
+                                <div class="form-text x-small">Maximum number of times a student can regenerate their AI
+                                    Diagnosis Report. Open up zero to allow unlimited.</div>
+                            </div>
                         </div>
                     </div>
                 </form>

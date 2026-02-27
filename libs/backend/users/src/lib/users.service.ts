@@ -27,6 +27,7 @@ export class UsersService {
                 role: true,
                 academicYear: true,
                 batch: true,
+                aiReportQuota: true,
                 createdAt: true,
             },
             orderBy: { createdAt: 'desc' }
@@ -42,6 +43,7 @@ export class UsersService {
                 firstName: true,
                 lastName: true,
                 role: true,
+                aiReportQuota: true,
                 createdAt: true,
                 organization: {
                     select: { name: true }
@@ -155,7 +157,8 @@ export class UsersService {
                 lastName: data.lastName,
                 role: data.role,
                 academicYear: data.academicYear,
-                batch: data.batch
+                batch: data.batch,
+                aiReportQuota: data.aiReportQuota !== undefined ? parseInt(data.aiReportQuota, 10) : undefined
             }
         });
     }
@@ -198,7 +201,8 @@ export class UsersService {
                 role: data.role || 'STUDENT',
                 isTempPassword: true,
                 academicYear: data.academicYear,
-                batch: data.batch
+                batch: data.batch,
+                aiReportQuota: data.aiReportQuota !== undefined ? parseInt(data.aiReportQuota, 10) : 2
             }
         });
 

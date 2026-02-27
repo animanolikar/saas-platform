@@ -1,0 +1,111 @@
+<div class="container-fluid p-4">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Billing & Payments</h2>
+        <p class="text-muted">Manage your payment gateway integrations to accept student payments.</p>
+    </div>
+
+    <!-- Alerts -->
+    <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+    <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ success }}
+        <button type="button" class="btn-close" (click)="success = ''"></button>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+        <div>Loading payment configurations...</div>
+    </div>
+
+    <div class="row g-4" *ngIf="!loading">
+        <!-- Razorpay Card -->
+        <div class="col-12 col-xl-6">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div
+                    class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-wallet2 text-primary"></i> Razorpay Integration
+                    </h5>
+                    <div class="form-check form-switch fs-5 mb-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="razorpayToggle"
+                            [(ngModel)]="razorpay.isActive" (change)="saveRazorpay()">
+                        <label class="form-check-label visually-hidden" for="razorpayToggle">Enable Razorpay</label>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <p class="text-muted small mb-4">
+                        Connect your Razorpay account to process credit card, debit card, and UPI transactions securely.
+                    </p>
+                    <form (ngSubmit)="saveRazorpay()">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">Key ID (API Key)</label>
+                            <input type="text" class="form-control" placeholder="rzp_live_xxxxxxxxxxx"
+                                [(ngModel)]="razorpay.apiKey" name="rzpKey">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small text-muted fw-bold">Key Secret (API Secret)</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" placeholder="•••••••••••••••••••••"
+                                    [(ngModel)]="razorpay.apiSecret" name="rzpSecret">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4 rounded-pill" [disabled]="savingRazorpay">
+                                <i class="bi" [class.bi-check-circle]="!savingRazorpay"
+                                    [class.bi-hourglass-split]="savingRazorpay"></i>
+                                {{ savingRazorpay ? 'Saving...' : 'Save Razorpay Keys' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PhonePe Card -->
+        <div class="col-12 col-xl-6">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div
+                    class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-phone-vibrate text-success"></i> PhonePe Integration
+                    </h5>
+                    <div class="form-check form-switch fs-5 mb-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="phonepeToggle"
+                            [(ngModel)]="phonepe.isActive" (change)="savePhonepe()">
+                        <label class="form-check-label visually-hidden" for="phonepeToggle">Enable PhonePe</label>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <p class="text-muted small mb-4">
+                        Connect your PhonePe Payment Gateway to offer seamless UPI and direct bank transfer options to
+                        students.
+                    </p>
+                    <form (ngSubmit)="savePhonepe()">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">Merchant ID</label>
+                            <input type="text" class="form-control" placeholder="PGTESTPAYUAT"
+                                [(ngModel)]="phonepe.apiKey" name="ppMerchantId">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small text-muted fw-bold">Salt Key</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control"
+                                    placeholder="••••••••-••••-••••-••••-••••••••••••" [(ngModel)]="phonepe.apiSecret"
+                                    name="ppSalt">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-4 rounded-pill" [disabled]="savingPhonepe">
+                                <i class="bi" [class.bi-check-circle]="!savingPhonepe"
+                                    [class.bi-hourglass-split]="savingPhonepe"></i>
+                                {{ savingPhonepe ? 'Saving...' : 'Save PhonePe Keys' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

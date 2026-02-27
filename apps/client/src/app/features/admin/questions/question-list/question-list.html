@@ -162,8 +162,40 @@
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label class="form-label fw-bold">Question Text</label>
+
+                            <!-- Math Toolbar -->
+                            <div class="mb-2 p-2 bg-light border rounded d-flex gap-2 align-items-center flex-wrap">
+                                <span class="fw-bold text-muted small me-2">Math Tools:</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                    (click)="openAiModal()">
+                                    ✨ AI Math
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-dark fw-bold"
+                                    (click)="openHandwritingModal()">
+                                    🖊️ Handwriting
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info fw-bold"
+                                    (click)="smartSyntax()">
+                                    ⚡ Smart
+                                </button>
+                                <div class="vr mx-1"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Integral"
+                                    (click)="insertMath('\\int_{0}^{1} x \\, dx')">∫</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Summation"
+                                    (click)="insertMath('\\sum_{i=1}^{n} x_i')">Σ</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Limit"
+                                    (click)="insertMath('\\lim_{x \\to \\infty}')">lim</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Fraction"
+                                    (click)="insertMath('\\frac{a}{b}')">a/b</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Square Root"
+                                    (click)="insertMath('\\sqrt{x}')">√x</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Power"
+                                    (click)="insertMath('x^2')">x²</button>
+                            </div>
+
                             <quill-editor class="content-editor" [styles]="{height: '200px'}"
                                 [(ngModel)]="newQuestion.content.text" name="qText"
+                                (onFocus)="setActiveField('question')"
                                 placeholder="Enter your question here..."></quill-editor>
                             <div *ngIf="newQuestion.content.text"
                                 class="mt-2 p-3 bg-light border rounded math-preview-container">
@@ -179,7 +211,7 @@
                             </div>
                             <label class="form-label fw-bold mt-2">Explanation (AI Context)</label>
                             <textarea class="form-control" rows="3" [(ngModel)]="newQuestion.explanation"
-                                name="qExplanation"
+                                name="qExplanation" (focus)="setActiveField('explanation')"
                                 placeholder="Explain why the answer is correct (Markdown supported)..."></textarea>
                             <div *ngIf="newQuestion.explanation"
                                 class="mt-2 p-3 bg-light border rounded math-preview-container">
@@ -222,7 +254,7 @@
                                         </ng-container>
                                     </div>
                                     <input type="text" class="form-control" [(ngModel)]="opt.text" [name]="'opt'+i"
-                                        placeholder="Option {{i+1}}">
+                                        (focus)="setActiveField('option', i)" placeholder="Option {{i+1}}">
                                 </div>
                                 <div *ngIf="opt.text"
                                     class="ms-5 mt-1 p-2 bg-light border rounded math-preview-container">
@@ -259,6 +291,52 @@
                 <button type="button" class="btn btn-primary px-4" (click)="saveQuestion()" [disabled]="saving">
                     {{ saving ? 'Saving...' : (currentQuestionId ? 'Update Question' : 'Create Question') }}
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Text Input Modal -->
+<div class="modal fade" id="aiTextModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">✨ AI Math Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Describe the formula in natural language (e.g., "integral from 0 to 1 of x
+                    squared").</p>
+                <textarea class="form-control" rows="3" [(ngModel)]="aiPrompt" placeholder="Type here..."></textarea>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-primary" (click)="generateAiText()" [disabled]="aiLoading">
+                    <span *ngIf="aiLoading" class="spinner-border spinner-border-sm me-1" role="status"
+                        aria-hidden="true"></span>
+                    Generate LaTeX
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Handwriting Modal -->
+<div class="modal fade" id="handwritingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">🖊️ Handwriting Input</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <app-math-canvas (imageExported)="onHandwritingConverted($event)"></app-math-canvas>
+            </div>
+            <div *ngIf="aiLoading"
+                class="overlay d-flex justify-content-center align-items-center position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 fw-bold text-primary">Processing handwriting...</p>
+                </div>
             </div>
         </div>
     </div>
