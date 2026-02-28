@@ -1,7 +1,25 @@
 <div class="d-flex vh-100 bg-body-tertiary">
-    <!-- Sidebar -->
-    <div class="bg-body border-end d-flex flex-column" style="width: 250px;">
-        <div class="border-bottom text-center d-flex align-items-center justify-content-center" style="height: 88px;">
+    <!-- Desktop Sidebar (Hidden on mobile) -->
+    <div class="bg-body border-end d-none d-lg-flex flex-column flex-shrink-0" style="width: 250px;">
+        <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+    </div>
+
+    <!-- Mobile Sidebar (Offcanvas) -->
+    <div class="offcanvas offcanvas-start bg-body" tabindex="-1" id="studentMobileSidebar"
+        aria-labelledby="studentMobileSidebarLabel" style="width: 250px;">
+        <div class="offcanvas-header border-bottom z-3 position-absolute top-0 end-0 border-0">
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#studentMobileSidebar"
+                aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column h-100 position-relative">
+            <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+        </div>
+    </div>
+
+    <!-- Shared Sidebar Content Template -->
+    <ng-template #sidebarContent>
+        <div class="border-bottom text-center d-flex align-items-center justify-content-center flex-shrink-0"
+            style="height: 88px;">
             <svg width="150" height="40" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <!-- SVG Content remains same -->
                 <path d="M14 40.5V31.2L3 18.8H9.4L16.9 27.8L24.5 18.8H30.8L19.9 31.2 V40.5H14Z" fill="#E10600" />
@@ -17,40 +35,50 @@
                 <circle cx="164" cy="10" r="4" fill="#9B0C08" />
             </svg>
         </div>
-        <nav class="nav flex-column p-3 gap-2">
+        <nav class="nav flex-column p-3 gap-2 overflow-y-auto">
             <a routerLink="/student/overview" routerLinkActive="bg-primary-subtle text-primary fw-bold"
-                class="nav-link text-body rounded-3 px-3 py-2">
+                class="nav-link text-body rounded-3 px-3 py-2" data-bs-dismiss="offcanvas"
+                data-bs-target="#studentMobileSidebar">
                 <i class="bi bi-speedometer2 me-2"></i> Overview
             </a>
             <a routerLink="/student/dashboard" routerLinkActive="bg-primary-subtle text-primary fw-bold"
-                class="nav-link text-body rounded-3 px-3 py-2">
+                class="nav-link text-body rounded-3 px-3 py-2" data-bs-dismiss="offcanvas"
+                data-bs-target="#studentMobileSidebar">
                 <i class="bi bi-grid me-2"></i> My Exams
             </a>
             <a routerLink="/student/results" routerLinkActive="bg-primary-subtle text-primary fw-bold"
-                class="nav-link text-body rounded-3 px-3 py-2">
+                class="nav-link text-body rounded-3 px-3 py-2" data-bs-dismiss="offcanvas"
+                data-bs-target="#studentMobileSidebar">
                 <i class="bi bi-journal-check me-2"></i> My Progress
             </a>
             <a routerLink="/student/reports" routerLinkActive="bg-primary-subtle text-primary fw-bold"
-                class="nav-link text-body rounded-3 px-3 py-2">
+                class="nav-link text-body rounded-3 px-3 py-2" data-bs-dismiss="offcanvas"
+                data-bs-target="#studentMobileSidebar">
                 <i class="bi bi-bar-chart-line me-2"></i> Analytics
             </a>
             <a routerLink="/student/parent-report" routerLinkActive="bg-primary-subtle text-primary fw-bold"
-                class="nav-link text-body rounded-3 px-3 py-2">
+                class="nav-link text-body rounded-3 px-3 py-2" data-bs-dismiss="offcanvas"
+                data-bs-target="#studentMobileSidebar">
                 <i class="bi bi-file-earmark-person me-2"></i> Parent Report
             </a>
         </nav>
-        <div class="mt-auto p-3 border-top text-center text-muted small">
+        <div class="mt-auto p-3 border-top text-center text-muted small flex-shrink-0">
             &copy; 2024 Yukti
         </div>
-    </div>
+    </ng-template>
 
     <!-- Main Content -->
     <div class="flex-grow-1 overflow-auto d-flex flex-column">
         <!-- Toolbar -->
         <header class="bg-body border-bottom px-4 d-flex justify-content-between align-items-center sticky-top"
             style="height: 88px;">
-            <!-- Breadcrumb or Title placeholder -->
-            <div class="fw-medium text-body-secondary">Student Portal</div>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light rounded-circle d-lg-none me-3 shadow-sm border" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#studentMobileSidebar">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div class="fw-medium text-body-secondary d-none d-sm-block">Student Portal</div>
+            </div>
 
             <div class="d-flex align-items-center gap-4">
                 <!-- Dark Mode Toggle -->
